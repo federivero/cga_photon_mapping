@@ -1,0 +1,50 @@
+
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans');
+
+/*
+@font-face {
+    font-family: SevenSegment;
+    src: url(sevensegments.ttf);
+}
+*/
+
+#photonMappingBox {
+    border: 1px solid black;   
+}
+
+
+.UItext{
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.UIbutton{
+    border: 1px solid black;
+    border-radius: 3px;
+    font-size: 14px;
+    padding: 15px;
+    font-weight: bold;
+}
+
+.UIbutton:hover{
+    cursor: pointer;
+}
+
+body {
+
+}
+
+.drag-drop-area{
+    height: 100%;
+    border: 3px dashed #BBB; 
+    text-align: center;
+}
+
+.linkCargarArchvo{
+    color: blue;
+    text-decoration: underline;
+}
+
+.linkCargarArchvo:hover{
+    cursor: pointer;
+}
