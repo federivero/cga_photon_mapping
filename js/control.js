@@ -4,18 +4,19 @@ var context = canvas.getContext('2d');
 
 var configuracion = null;
 
-function inicializar(){
+var Control = {};
 
-    borrarCanvas();
-    mensajeInicialCanvas();
-    inicializarFileUpload();
+Control.initialize = function(){
+    Control.eraseCanvas();
+    Control.canvasStartupMessage();
+    Control.inicializarFileUpload();
 }
 
-function clickLnkCargarArchivo(){
+Control.clickLnkCargarArchivo = function(){
 	document.getElementById('inputCargarArchivo').click();
 }
 
-function parsearConfiguracion(configuracionTxt){
+Control.parsearConfiguracion = function(configuracionTxt){
 	var configuracionJson = JSON.parse(configuracionTxt);
 
     // todo: controlar errores en el json
@@ -23,13 +24,17 @@ function parsearConfiguracion(configuracionTxt){
 	configuracion = configuracionJson;
 }
 
-function borrarCanvas(){
+Control.eraseCanvas = function(){
     // setear los valores width y height borran la imagen del canvas!
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;   
+
+    context.fillStyle = "white";
+    context.rect(0, 0, canvas.width, canvas.height);
+    context.fill();
 }
 
-function mensajeInicialCanvas(){
+Control.canvasStartupMessage = function(){
     context.font = "24px Verdana";
     context.fillStyle = "black";
     context.textAlign = "center";
@@ -37,7 +42,7 @@ function mensajeInicialCanvas(){
     context.fillText("Próximamente: imagen de photon mapping", canvas.width / 2, canvas.height / 2);
 }
 
-function inicializarFileUpload(){
+Control.inicializarFileUpload = function(){
     $('#inputCargarArchivo').fileupload({
         // Función llamada al seleccionar un archivo nuevo
         add: function(e, data){ 
@@ -68,7 +73,8 @@ function inicializarFileUpload(){
         }
     });
 }
-function iniciarPhotonMapping(){
+
+Control.iniciarPhotonMapping = function(){
 	
 	var ok = controlarPrecondiciones();
 	
@@ -77,7 +83,7 @@ function iniciarPhotonMapping(){
 	}
 }
 
-function controlarPrecondiciones(){
+Control.controlarPrecondiciones = function(){
 	if (configuracion == null){
 		$.notify('Falta cargar la configuracion','warn');
 		return false;
@@ -87,3 +93,10 @@ function controlarPrecondiciones(){
 }
 
 
+Control.downloadCanvas = function(){
+    var downloadLink = document.getElementById('downloadCanvasLink');
+    var canvasImage = canvas.toDataURL('image/jpeg', 1.0);
+    downloadLink.setAttribute('download', "canvasImage.jpg");
+    downloadLink.href = canvasImage;
+    downloadLink.click();
+}

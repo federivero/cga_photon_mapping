@@ -1,0 +1,7 @@
+
+Photon = function(){
+	
+}
+
+
+

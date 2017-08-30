@@ -1,0 +1,21 @@
+
+
+// construccion de photon mapping
+
+while mas fotones
+	
+	nuevo foton
+	obtener direccion de foton
+	objeto = tirar foton hacia la direccion e intersecar contra objeto
+	objeto.handlefoton
+
+
+
+objeto.handlefoton
+	chequear si vive o muere
+	obtener direccion de foton
+	objeto2 = tirar foton hacia la direccion e intersecar contra objeto
+	objeto2.handlefoton
+
+
+

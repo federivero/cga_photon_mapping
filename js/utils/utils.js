@@ -506,6 +506,7 @@ function drawMousePosition(context, mousePosition){
 
 /* IMAGE FUNCITONS */
 
+
 function sharpenFilter(imageData, context){
 	var weights = [0, -1,  0,
 				  -1,  5, -1,

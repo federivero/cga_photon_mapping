@@ -1,0 +1,6 @@
+
+PhotonMappingController = function(){
+	
+}
+
+

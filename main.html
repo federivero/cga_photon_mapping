@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+		<meta encoding="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 	</head>
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 
@@ -11,7 +11,7 @@
 					<div class="drag-drop-area">
 						<div style="display:table; width: 100%; height: 100%;">
 							<div style="display:table-cell; height: 100%; vertical-align: middle;" id=""> 
-								Arrastra o <a class="linkCargarArchvo" onclick="clickLnkCargarArchivo()">selecciona</a> archivos de configuración <input type="file" id="inputCargarArchivo" style="display:none">
+								Arrastra o <a class="linkCargarArchvo" onclick="Control.clickLnkCargarArchivo()">selecciona</a> archivos de configuración <input type="file" id="inputCargarArchivo" style="display:none">
 							</div>
 						</div>
                     </div>
@@ -20,7 +20,8 @@
 					<div style="height: 100%">
 						<div style="display:table; width: 100%; height: 100%;">
 							<div style="display:table-cell; height: 100%; vertical-align: middle; text-align: center"> 
-								<input class="UIButton" type="button" onclick="iniciarPhotonMapping();" value="Iniciar"/>
+								<input class="UIButton" type="button" onclick="Control.iniciarPhotonMapping();" value="Iniciar"/>
+								<input class="UIButton" type="button" onclick="Control.downloadCanvas();" value="Descargar Imagen"/>
 							</div>							
 						</div>
 					</div>
@@ -36,6 +37,9 @@
 		</table>
 	</body>
 
+	<!-- Fake canvas to download the image -->
+	<a style="display: none;" id="downloadCanvasLink"></a>
+
 	<script type="text/javascript" src="js/libraries/jquery-3.1.1.min.js"></script>
 	<script type="text/javascript" src="js/libraries/bootbox.min.js"></script>
 	<script type="text/javascript" src="js/libraries/jquery.ui.widget.js"></script>
@@ -50,7 +54,7 @@
 
 	<script type="text/javascript">
 
-		inicializar();
+		Control.initialize();
 
 	</script>
 </html>
