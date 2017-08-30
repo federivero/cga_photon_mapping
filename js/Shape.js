@@ -1,5 +1,0 @@
-
-Shape = function(){
-	
-}
-
