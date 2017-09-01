@@ -11,46 +11,45 @@ Control.initialize = function(){
     Control.canvasStartupMessage();
     Control.inicializarFileUpload();
 	
-	img = context.getImageData(0, 0, canvas.width, canvas.height);
+	let img = context.getImageData(0, 0, canvas.width, canvas.height);
 	
-	pos_camera = new Vector(0,0,0);
-	viewport = {
+	let pos_camera = new Vector(0,0,0);
+	let viewport = {
 		center: new Vector(0,0,10),
-		width: 5,
-		height: 5
+		width: 10,
+		height: 10
 	};
 	
-	pixel_size = {
+	let pixel_size = {
 		width: viewport.width / canvas.width,
 		height: viewport.height / canvas.height
 	}
-	topleft = new Vector(
-		viewport.center.x - viewport.width,
-		viewport.center.y + viewport.height,
+	let topleft = new Vector(
+		viewport.center.x - (viewport.width / 2),
+		viewport.center.y + (viewport.height / 2),
 		viewport.center.z
 	);
 	
 	let pixels = [];
-	for (let i = 0; i < canvas.height; ++i) {
-		for (let j = 0; j < canvas.width; ++j) {
-			// pixels[i*j]
+	for (let row = 0; row < canvas.height; ++row) {
+		for (let col = 0; col < canvas.width; ++col) {
+			// pixels[row*canvas.width + col]
 			pixels.push(new Vector(
-				topleft.x + (j * pixel_size.width) + pixel_size.width / 2,
-				topleft.y - (i * pixel_size.height) - pixel_size.height / 2,
+				topleft.x + (col * pixel_size.width) + pixel_size.width / 2,
+				topleft.y - (row * pixel_size.height) - pixel_size.height / 2,
 				topleft.z
 			));
 		}
 	}
-	sphere = new Sphere(new Vector(0,0,15), 5);
-	for (let i = 0; i < canvas.height; ++i) {
-		for (let j = 0; j < canvas.width; ++j) {
-			let current_pos = (i*canvas.width + j) * 4;
-			if (sphere.collide([pos_camera, pixels[i*j]]).length > 0) {
-				//console.log(sphere.collide([pos_camera, pixels[i*j]]));
-				//console.log(current_pos);
+
+	sphere = new Sphere(new Vector(0, 0, 25), 3);
+	for (let row = 0; row < canvas.height; ++row) {
+		for (let col = 0; col < canvas.width; ++col) {
+			let current_pos = (row*canvas.width + col) * 4;
+			if (sphere.collide([pos_camera, pixels[row*canvas.width + col]]).length > 0) {
 				img.data[current_pos] = 255;
 				img.data[current_pos + 1] = 0;
-				img.data[current_pos + 2] = 70;
+				img.data[current_pos + 2] = 0;
 				img.data[current_pos + 3] = 0;
 			} else {
 				img.data[current_pos] = 0;
@@ -59,12 +58,6 @@ Control.initialize = function(){
 				img.data[current_pos + 3] = 255;
 			}
 		}
-	}
-	console.log(img);
-	for (let i = 0; i < 8100; i+=4) {
-		img.data[i+1] = 0;
-		img.data[i+2] = 70;
-		img.data[i+3] = 240;
 	}
 	context.putImageData(img, 0, 0);
 }
