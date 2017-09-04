@@ -137,10 +137,10 @@ Control.rayTrace = function() {
 			let found = false;
 			Control.scene.shapes.forEach(function(shape){
 				if (shape.collide([Control.scene.camera, pixels[row*canvas.width + col]]).length > 0) {
-					img.data[current_pos] = 255;
+					img.data[current_pos] = 200;
 					img.data[current_pos + 1] = 0;
-					img.data[current_pos + 2] = 0;
-					img.data[current_pos + 3] = 0;
+					img.data[current_pos + 2] = 100;
+					img.data[current_pos + 3] = 255;
 					found = true;
 				}
 			})
