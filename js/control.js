@@ -10,56 +10,9 @@ Control.initialize = function(){
     Control.eraseCanvas();
     Control.canvasStartupMessage();
     Control.inicializarFileUpload();
-	
-	let img = context.getImageData(0, 0, canvas.width, canvas.height);
-	
-	let pos_camera = new Vector(0,0,0);
-	let viewport = {
-		center: new Vector(0,0,10),
-		width: 10,
-		height: 10
-	};
-	
-	let pixel_size = {
-		width: viewport.width / canvas.width,
-		height: viewport.height / canvas.height
-	}
-	let topleft = new Vector(
-		viewport.center.x - (viewport.width / 2),
-		viewport.center.y + (viewport.height / 2),
-		viewport.center.z
-	);
-	
-	let pixels = [];
-	for (let row = 0; row < canvas.height; ++row) {
-		for (let col = 0; col < canvas.width; ++col) {
-			// pixels[row*canvas.width + col]
-			pixels.push(new Vector(
-				topleft.x + (col * pixel_size.width) + pixel_size.width / 2,
-				topleft.y - (row * pixel_size.height) - pixel_size.height / 2,
-				topleft.z
-			));
-		}
-	}
-
-	sphere = new Sphere(new Vector(0, 0, 25), 3);
-	for (let row = 0; row < canvas.height; ++row) {
-		for (let col = 0; col < canvas.width; ++col) {
-			let current_pos = (row*canvas.width + col) * 4;
-			if (sphere.collide([pos_camera, pixels[row*canvas.width + col]]).length > 0) {
-				img.data[current_pos] = 255;
-				img.data[current_pos + 1] = 0;
-				img.data[current_pos + 2] = 0;
-				img.data[current_pos + 3] = 0;
-			} else {
-				img.data[current_pos] = 0;
-				img.data[current_pos + 1] = 0;
-				img.data[current_pos + 2] = 0;
-				img.data[current_pos + 3] = 255;
-			}
-		}
-	}
-	context.putImageData(img, 0, 0);
+	Control.loadScene();
+	Control.iniciarPhotonMapping();
+	Control.rayTrace();	
 }
 
 Control.clickLnkCargarArchivo = function(){
@@ -124,13 +77,82 @@ Control.inicializarFileUpload = function(){
     });
 }
 
+Control.loadScene = function() {
+	let shapes = [
+		new Sphere(new Vector(0, 0, 25), 3),
+		new Sphere(new Vector(3, 0, 20), 1),
+	];
+	let lights = [];
+	let camera = new Vector(0,0,0)
+	let viewport = {
+		center: new Vector(0,0,10),
+		width: 10,
+		height: 10
+	};
+	Control.scene = new Scene(
+		shapes,
+		lights,
+		camera,
+		viewport
+	);
+}
+
 Control.iniciarPhotonMapping = function(){
 	
-	var ok = controlarPrecondiciones();
+	var ok = Control.controlarPrecondiciones();
 	
 	if (ok){
 		// photonMappingManager.init ... 
 	}
+}
+
+Control.rayTrace = function() {
+	let img = context.getImageData(0, 0, canvas.width, canvas.height);
+	
+	let pixel_size = {
+		width: Control.scene.viewport.width / canvas.width,
+		height: Control.scene.viewport.height / canvas.height
+	}
+	let topleft = new Vector(
+		Control.scene.viewport.center.x - (Control.scene.viewport.width / 2),
+		Control.scene.viewport.center.y + (Control.scene.viewport.height / 2),
+		Control.scene.viewport.center.z
+	);
+	
+	let pixels = [];
+	for (let row = 0; row < canvas.height; ++row) {
+		for (let col = 0; col < canvas.width; ++col) {
+			// pixels[row*canvas.width + col]
+			pixels.push(new Vector(
+				topleft.x + (col * pixel_size.width) + pixel_size.width / 2,
+				topleft.y - (row * pixel_size.height) - pixel_size.height / 2,
+				topleft.z
+			));
+		}
+	}
+
+	for (let row = 0; row < canvas.height; ++row) {
+		for (let col = 0; col < canvas.width; ++col) {
+			let current_pos = (row*canvas.width + col) * 4;
+			let found = false;
+			Control.scene.shapes.forEach(function(shape){
+				if (shape.collide([Control.scene.camera, pixels[row*canvas.width + col]]).length > 0) {
+					img.data[current_pos] = 255;
+					img.data[current_pos + 1] = 0;
+					img.data[current_pos + 2] = 0;
+					img.data[current_pos + 3] = 0;
+					found = true;
+				}
+			})
+			if (!found) {
+				img.data[current_pos] = 0;
+				img.data[current_pos + 1] = 0;
+				img.data[current_pos + 2] = 0;
+				img.data[current_pos + 3] = 255;
+			}
+		}
+	}
+	context.putImageData(img, 0, 0);
 }
 
 Control.controlarPrecondiciones = function(){
