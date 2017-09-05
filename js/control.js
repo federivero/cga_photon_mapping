@@ -84,14 +84,16 @@ Control.loadScene = function() {
                 new Vector(0, 0, 25),
                 null,
                 new Vector(3, 3, 3)
-            )
+            ),
+            new Color(100, 40, 0)
         ),
 		new Sphere(
             new Transform(
                 new Vector(3, 0, 20),
                 null,
                 new Vector(1, 1, 1)
-            )
+            ),
+            new Color(20, 180, 40)
         )
 	];
 	let lights = [];
@@ -143,33 +145,41 @@ Control.rayTrace = function() {
 		}
 	}
 
+    let v1 = Control.scene.camera;
+    // The dot product of this vector with any point shouldn't be negative
+    let direction = Control.scene.viewport.center.subtract(v1);
+    let segment = new Vector();
+    let aux = new Vector();
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
             // from here onwards it's the Trace function, soon to be moved away
 			let current_pos = (row*canvas.width + col) * 4;
 			let found = false;
-            let segment = new Vector();
-            v1 = Control.scene.camera;
-            v2 = pixels[row*canvas.width + col];
+            let v2 = pixels[row*canvas.width + col];
+            let shortest_distance = -1;
+            let nearest_shape = null;
+            let nearest_collision = null;
 			Control.scene.shapes.forEach(function(shape){
                 collisions = shape.collide([v1, v2]);
                 collisions.forEach(function(current_collision) {
                     // for each collision, keep the closest point found yet
                     // check if the vector is on the right side of the camera
-                    segment = Vector.substract(current_collision, v1, segment);
-                    if segment.dot()
-                    // TODO: you are here. line 210 of Shape.cpp
-
+                    segment = Vector.subtract(current_collision, v1, segment);
+                    if ((segment.dot(direction) >= 0) && (!found || (segment.length() < shortest_distance))) {
+                        found = true;
+                        shortest_distance = segment.length();
+                        nearest_shape = shape;
+                        nearest_collision = current_collision;
+                    }
                 });
-				if (collisions.length > 0) {
-					img.data[current_pos] = 200;
-					img.data[current_pos + 1] = 0;
-					img.data[current_pos + 2] = 100;
-					img.data[current_pos + 3] = 255;
-					found = true;
-				}
 			})
-			if (!found) {
+            if (found === true) {
+                img.data[current_pos] = nearest_shape.color.r;
+                img.data[current_pos + 1] = nearest_shape.color.g;
+                img.data[current_pos + 2] = nearest_shape.color.b;
+                img.data[current_pos + 3] = 255;
+                found = true;
+            } else {
 				img.data[current_pos] = 0;
 				img.data[current_pos + 1] = 0;
 				img.data[current_pos + 2] = 0;
