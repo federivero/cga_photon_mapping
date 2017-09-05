@@ -1,9 +1,12 @@
 // Inherits from Shape
-function Sphere(center, radius) {
-	Shape.call(this);
-
-	this.center = center;
-	this.radius = radius;
+// A sphere of center 0,0,0 and radius 1. size and position works via the transform
+function Sphere(transform) {
+	Shape.call(this, transform);
+	if (transform.scale.x !== transform.scale.y || transform.scale.x !== transform.scale.z || transform.scale.y !== transform.scale.z) {
+		throw new Error('You tried to create a non-spherical sphere');
+	};
+	this.center = transform.position;
+	this.radius = transform.scale.x;
 };
 
 Sphere.prototype = Object.create(Shape.prototype);

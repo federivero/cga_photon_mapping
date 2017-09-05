@@ -1,5 +1,5 @@
-function Shape() {
-
+function Shape(transform) {
+	this.transform = transform;
 };
 
 Shape.prototype = {

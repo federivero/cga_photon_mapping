@@ -12,7 +12,7 @@ Control.initialize = function(){
     Control.inicializarFileUpload();
 	Control.loadScene();
 	Control.iniciarPhotonMapping();
-	Control.rayTrace();	
+	Control.rayTrace();
 }
 
 Control.clickLnkCargarArchivo = function(){
@@ -30,7 +30,7 @@ Control.parsearConfiguracion = function(configuracionTxt){
 Control.eraseCanvas = function(){
     // setear los valores width y height borran la imagen del canvas!
     canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;   
+    canvas.height = canvas.offsetHeight;
 
     context.fillStyle = "white";
     context.rect(0, 0, canvas.width, canvas.height);
@@ -48,16 +48,16 @@ Control.canvasStartupMessage = function(){
 Control.inicializarFileUpload = function(){
     $('#inputCargarArchivo').fileupload({
         // Función llamada al seleccionar un archivo nuevo
-        add: function(e, data){ 
+        add: function(e, data){
             var archivo = data.files[0];
             var lector = new FileReader();
             lector.readAsText(archivo);
-            
+
             lector.onloadend = function(){
                 var extension = "";
 
                 var nombreArchivo = archivo.name;
-                if (nombreArchivo.includes(".")){ 
+                if (nombreArchivo.includes(".")){
                     extension = nombreArchivo.substring(nombreArchivo.lastIndexOf("."))
                 }else{
                     $.notify("Archivo sin extensión", "error");
@@ -65,7 +65,7 @@ Control.inicializarFileUpload = function(){
                 }
                 if (EXTENSIONES_VALIDAS.indexOf(extension) == -1){
                     $.notify("Extensión inválida. Extensiones válidas: " + EXTENSIONES_VALIDAS, "error");
-                    return; 
+                    return;
                 }
                 var contenidoArchivo = lector.result;
                 if (extension == EXTENSION_JSON){
@@ -79,8 +79,20 @@ Control.inicializarFileUpload = function(){
 
 Control.loadScene = function() {
 	let shapes = [
-		new Sphere(new Vector(0, 0, 25), 3),
-		new Sphere(new Vector(3, 0, 20), 1),
+		new Sphere(
+            new Transform(
+                new Vector(0, 0, 25),
+                null,
+                new Vector(3, 3, 3)
+            )
+        ),
+		new Sphere(
+            new Transform(
+                new Vector(3, 0, 20),
+                null,
+                new Vector(1, 1, 1)
+            )
+        )
 	];
 	let lights = [];
 	let camera = new Vector(0,0,0)
@@ -98,17 +110,17 @@ Control.loadScene = function() {
 }
 
 Control.iniciarPhotonMapping = function(){
-	
+
 	var ok = Control.controlarPrecondiciones();
-	
+
 	if (ok){
-		// photonMappingManager.init ... 
+		// photonMappingManager.init ...
 	}
 }
 
 Control.rayTrace = function() {
 	let img = context.getImageData(0, 0, canvas.width, canvas.height);
-	
+
 	let pixel_size = {
 		width: Control.scene.viewport.width / canvas.width,
 		height: Control.scene.viewport.height / canvas.height
@@ -118,7 +130,7 @@ Control.rayTrace = function() {
 		Control.scene.viewport.center.y + (Control.scene.viewport.height / 2),
 		Control.scene.viewport.center.z
 	);
-	
+
 	let pixels = [];
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
@@ -133,10 +145,23 @@ Control.rayTrace = function() {
 
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
+            // from here onwards it's the Trace function, soon to be moved away
 			let current_pos = (row*canvas.width + col) * 4;
 			let found = false;
+            let segment = new Vector();
+            v1 = Control.scene.camera;
+            v2 = pixels[row*canvas.width + col];
 			Control.scene.shapes.forEach(function(shape){
-				if (shape.collide([Control.scene.camera, pixels[row*canvas.width + col]]).length > 0) {
+                collisions = shape.collide([v1, v2]);
+                collisions.forEach(function(current_collision) {
+                    // for each collision, keep the closest point found yet
+                    // check if the vector is on the right side of the camera
+                    segment = Vector.substract(current_collision, v1, segment);
+                    if segment.dot()
+                    // TODO: you are here. line 210 of Shape.cpp
+
+                });
+				if (collisions.length > 0) {
 					img.data[current_pos] = 200;
 					img.data[current_pos + 1] = 0;
 					img.data[current_pos + 2] = 100;
