@@ -94,6 +94,14 @@ Control.loadScene = function() {
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40)
+        ),
+		new Sphere(
+            new Transform(
+                new Vector(-5, -4, 40),
+                null,
+                new Vector(15, 15, 15)
+            ),
+            new Color(200, 180, 40)
         )
 	];
 	let lights = [];
