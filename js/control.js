@@ -104,6 +104,24 @@ Control.loadScene = function() {
             new Color(200, 180, 40)
         )
 	];
+	shapes = [
+		new Sphere(
+            new Transform(
+                new Vector(0, 0, 25),
+                null,
+                new Vector(3, 3, 3)
+            ),
+            new Color(100, 40, 0)
+        ),
+		new Sphere(
+            new Transform(
+                new Vector(3, 0, 20),
+                null,
+                new Vector(1, 1, 1)
+            ),
+            new Color(20, 180, 40)
+        )
+	];
 	let lights = [
 		new PointLight(
 			new Transform(
@@ -174,7 +192,7 @@ Control.rayTrace = function() {
             let nearest_shape = null;
             let nearest_collision = null;
 			Control.scene.shapes.forEach(function(shape){
-                collisions = shape.collide([v1, v2]);
+                let collisions = shape.collide([v1, v2]);
                 collisions.forEach(function(current_collision) {
                     // for each collision, keep the closest point found yet
                     // check if the vector is on the right side of the camera
@@ -188,11 +206,11 @@ Control.rayTrace = function() {
                 });
 			})
             if (found === true) {
-                img.data[current_pos] = nearest_shape.color.r;
-                img.data[current_pos + 1] = nearest_shape.color.g;
-                img.data[current_pos + 2] = nearest_shape.color.b;
+				let color = nearest_shape.calculate_color(nearest_collision, v1, v2, 1);
+                img.data[current_pos] = color.r;
+                img.data[current_pos + 1] = color.g;
+                img.data[current_pos + 2] = color.b;
                 img.data[current_pos + 3] = 255;
-                found = true;
             } else {
 				img.data[current_pos] = 0;
 				img.data[current_pos + 1] = 0;

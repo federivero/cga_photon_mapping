@@ -30,9 +30,14 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		light = Control.scene.lights[i];
 		light_direction = Vector.subtract(light.transform.position, collision, light_direction);
 		normal = this.calculate_normal(collision, normal);
-		if (light_direction.dot(normal) > 0) {
-			
+		// if the current light is on the visible side
+		// and the point isn't shadowed by another one
+		if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
 			light_direction = Vector.unit(light_direction, light_direction);
+			// TODO complete this
+			return this.color
+		} else {
+			return new Color (0, 0, 0);
 		}
 	}
 };

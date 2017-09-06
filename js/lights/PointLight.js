@@ -7,31 +7,36 @@ PointLight.prototype = Object.create(Light.prototype);
 PointLight.prototype.constructor = PointLight;
 
 PointLight.prototype.is_shadow = function(p, shape) {
-	// TODO join this with the trace function since it's copied from there
-	let found = false;
-	let v2 = pixels[row*canvas.width + col];
-	let shortest_distance = -1;
-	let nearest_shape = null;
-	let nearest_collision = null;
+	// TODO maybe join this with the trace function since it's copied from there
 	let segment = new Vector();
-	Control.scene.shapes.forEach(function(shape2){
+	let direction = p.subtract(this.transform.position);
+	let distance = direction.length();
+	
+	var asd = false;
+	
+	for (let i = 0, len = Control.scene.shapes.length; i < len; ++i) {
+		let shape2 = Control.scene.shapes[i];
 		// skip the target shape
 		if (shape === shape2) {
-			return
+			asd = true;
+			continue;
 		}
-		collisions = shape.collide([this.transform.position, p]);
-		collisions.forEach(function(current_collision) {
-			// for each collision, keep the closest point found yet
-			// check if the vector is on the right side of the camera
-			segment = Vector.subtract(current_collision, v1, segment);
-			if ((segment.dot(direction) >= 0) && (!found || (segment.length() < shortest_distance))) {
-				found = true;
-				shortest_distance = segment.length();
-				nearest_shape = shape;
-				nearest_collision = current_collision;
+		let collisions = shape.collide([this.transform.position, p]);
+		for (let i = 0, len = collisions.length; i < len; ++i) {
+			let current_collision = collisions[i];
+			// for each collision, check if it's closer than our shape
+			// check if the vector is on the right side
+			segment = Vector.subtract(current_collision, this.transform.position, segment);
+			if ((segment.dot(direction) >= 0) && (segment.length() < distance)) {
+				console.log(asd)
+				console.log(segment.length(), distance)
+				return true;
 			}
-		});
-	})
+		}
+	}
+	if (asd) {
+	}
+	return false;
 }
 
 
