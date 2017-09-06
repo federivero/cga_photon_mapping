@@ -104,7 +104,14 @@ Control.loadScene = function() {
             new Color(200, 180, 40)
         )
 	];
-	let lights = [];
+	let lights = [
+		new PointLight(
+			new Transform(
+				new Vector(10, 8, 3), null, null
+			),
+			new Color(255, 255, 255)
+		)
+	];
 	let camera = new Vector(0,0,0)
 	let viewport = {
 		center: new Vector(0,0,10),
@@ -157,7 +164,6 @@ Control.rayTrace = function() {
     // The dot product of this vector with any point shouldn't be negative
     let direction = Control.scene.viewport.center.subtract(v1);
     let segment = new Vector();
-    let aux = new Vector();
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
             // from here onwards it's the Trace function, soon to be moved away

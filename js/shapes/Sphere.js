@@ -35,7 +35,6 @@ Sphere.prototype.collide = function (ray) {
 			(-b - Math.sqrt(b*b - 4 * a*c)) / (2 * a)
 		]
 	}
-
 	if (roots.length === 0) {
 		return [];
 	} else if (roots.length === 1) {
@@ -54,4 +53,14 @@ Sphere.prototype.collide = function (ray) {
 			temp1
 		]
 	}
+};
+
+Sphere.prototype.calculate_normal = function(p, normal=null) {
+	if (normal === null) {
+		normal = new Vector();
+	};
+	normal.x = (p.x - this.center.x) / this.radius;
+	normal.y = (p.y - this.center.y) / this.radius;
+	normal.z = (p.z - this.center.z) / this.radius;
+	return normal;
 };
