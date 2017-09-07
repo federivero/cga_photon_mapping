@@ -104,28 +104,10 @@ Control.loadScene = function() {
             new Color(200, 180, 40)
         )
 	];
-	shapes = [
-		new Sphere(
-            new Transform(
-                new Vector(0, 0, 25),
-                null,
-                new Vector(3, 3, 3)
-            ),
-            new Color(100, 40, 0)
-        ),
-		new Sphere(
-            new Transform(
-                new Vector(3, 0, 20),
-                null,
-                new Vector(1, 1, 1)
-            ),
-            new Color(20, 180, 40)
-        )
-	];
 	let lights = [
 		new PointLight(
 			new Transform(
-				new Vector(10, 8, 3), null, null
+				new Vector(10, 8, 10), null, null
 			),
 			new Color(255, 255, 255)
 		)

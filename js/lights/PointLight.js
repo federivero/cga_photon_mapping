@@ -14,22 +14,20 @@ PointLight.prototype.is_shadow = function(p, shape) {
 	
 	var asd = false;
 	
-	for (let i = 0, len = Control.scene.shapes.length; i < len; ++i) {
+	for (let i = 0, leni = Control.scene.shapes.length; i < leni; ++i) {
 		let shape2 = Control.scene.shapes[i];
 		// skip the target shape
 		if (shape === shape2) {
 			asd = true;
 			continue;
 		}
-		let collisions = shape.collide([this.transform.position, p]);
-		for (let i = 0, len = collisions.length; i < len; ++i) {
-			let current_collision = collisions[i];
+		let collisions = shape2.collide([this.transform.position, p]);
+		for (let j = 0, lenj = collisions.length; j < lenj; ++j) {
+			let current_collision = collisions[j];
 			// for each collision, check if it's closer than our shape
 			// check if the vector is on the right side
 			segment = Vector.subtract(current_collision, this.transform.position, segment);
 			if ((segment.dot(direction) >= 0) && (segment.length() < distance)) {
-				console.log(asd)
-				console.log(segment.length(), distance)
 				return true;
 			}
 		}
