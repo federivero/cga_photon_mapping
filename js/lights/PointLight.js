@@ -1,6 +1,6 @@
 // Inherits from Light
-function PointLight(transform, intensity) {
-	Light.call(this, transform, intensity);
+function PointLight(transform, intensity, power) {
+	Light.call(this, transform, intensity, power);
 };
 
 PointLight.prototype = Object.create(Light.prototype);

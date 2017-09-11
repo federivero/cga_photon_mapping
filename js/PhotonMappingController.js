@@ -1,6 +1,0 @@
-
-PhotonMappingController = function(){
-	
-}
-
-

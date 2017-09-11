@@ -2,35 +2,78 @@
 var canvas = document.getElementById('photonMappingBox');
 var context = canvas.getContext('2d');
 
-var configuracion = null;
+var config = null;
 
 var Control = {};
 
 Control.initialize = function(){
     Control.eraseCanvas();
     Control.canvasStartupMessage();
-    Control.inicializarFileUpload();
+    Control.initializeFileUpload();
 	Control.loadScene();
-	Control.iniciarPhotonMapping();
+	//Control.startPhotonMapping();
 	Control.rayTrace();
+
+    //Control.tests();
+}
+
+Control.tests = function(){
+
+    // plane collision test
+    var p = new Plane( [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)], 
+            new Transform(
+                new Vector(0, 0, 25),
+                null,
+                new Vector(3, 3, 3)
+            ),
+            new Color(100, 40, 0) );
+
+    //console.log(p.collide([new Vector(0,0,-1),  new Vector(0,2,1)]));
+
+    // triangle collision test
+     var t = new Triangle( [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)], 
+            new Transform(
+                new Vector(0, 0, 25),
+                null,
+                new Vector(3, 3, 3)
+            ),
+            new Color(100, 40, 0) );
+
+    console.log(t.collide([new Vector(0.2,0.2,-1),  new Vector(0.2,0.2,1)]));
+    console.log(t.collide([new Vector(0.5,0.5,-1),  new Vector(0.5,0.5,1)]));
+    console.log(t.collide([new Vector(1,1,-1),  new Vector(1,1,1)]));
+    console.log(t.collide([new Vector(0,-0.1,-1),  new Vector(0,-0.1,1)]));
 }
 
 Control.clickLnkCargarArchivo = function(){
 	document.getElementById('inputCargarArchivo').click();
 }
 
-Control.parsearConfiguracion = function(configuracionTxt){
-	var configuracionJson = JSON.parse(configuracionTxt);
+Control.parsearConfiguracion = function(txtConfig){
+	var jsonConfig = JSON.parse(txtConfig);
 
-    // todo: controlar errores en el json
+    // todo: handle error in json
 
-	configuracion = configuracionJson;
+	config = jsonConfig;
 }
 
 Control.eraseCanvas = function(){
-    // setear los valores width y height borran la imagen del canvas!
+    // setting width and height values of the canvas erases it
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+
+    context.fillStyle = "white";
+    context.rect(0, 0, canvas.width, canvas.height);
+    context.fill();
+}
+
+Control.setCanvasWidthAndHeight = function(w,h){
+
+    canvas.style.width = w;
+    canvas.style.height = h;    
+
+    canvas.width = w;
+    canvas.height = h;
 
     context.fillStyle = "white";
     context.rect(0, 0, canvas.width, canvas.height);
@@ -45,20 +88,24 @@ Control.canvasStartupMessage = function(){
     context.fillText("Próximamente: imagen de photon mapping", canvas.width / 2, canvas.height / 2);
 }
 
-Control.inicializarFileUpload = function(){
+Control.getCanvasAspectRatio = function(){
+    return canvas.width / canvas.height;
+}
+
+Control.initializeFileUpload = function(){
     $('#inputCargarArchivo').fileupload({
         // Función llamada al seleccionar un archivo nuevo
         add: function(e, data){
-            var archivo = data.files[0];
-            var lector = new FileReader();
-            lector.readAsText(archivo);
+            var file = data.files[0];
+            var reader = new FileReader();
+            reader.readAsText(file);
 
-            lector.onloadend = function(){
+            reader.onloadend = function(){
                 var extension = "";
 
-                var nombreArchivo = archivo.name;
-                if (nombreArchivo.includes(".")){
-                    extension = nombreArchivo.substring(nombreArchivo.lastIndexOf("."))
+                var fileName = archivo.name;
+                if (fileName.includes(".")){
+                    extension = fileName.substring(fileName.lastIndexOf("."))
                 }else{
                     $.notify("Archivo sin extensión", "error");
                     return;
@@ -67,9 +114,9 @@ Control.inicializarFileUpload = function(){
                     $.notify("Extensión inválida. Extensiones válidas: " + EXTENSIONES_VALIDAS, "error");
                     return;
                 }
-                var contenidoArchivo = lector.result;
+                var fileContent = reader.result;
                 if (extension == EXTENSION_JSON){
-                    parsearConfiguracion(contenidoArchivo);
+                    parsearConfiguracion(fileContent);
                 }
 
             }
@@ -109,14 +156,38 @@ Control.loadScene = function() {
 			new Transform(
 				new Vector(10, 8, 10), null, null
 			),
-			new Color(255, 255, 255)
+			new Color(255, 255, 255),
+            100 // power
 		)
 	];
 	let camera = new Vector(0,0,0)
 	let viewport = {
 		center: new Vector(0,0,10),
-		width: 10,
-		height: 10
+		width: 20,
+		height: 10,
+        getAspectRatio : function(){
+            return this.width / this.height;
+        },
+        collidesWithRay : function(ray){
+            if (this.triangles == undefined){
+                this.generateTriangles();
+            }
+            var collision = this.triangles[0].collide(ray);
+            if (collision.length > 0){
+                return collision;
+            }else{
+                return this.triangles[1].collide(ray);
+            }
+        },
+        generateTriangles : function(){
+            this.triangles = [];
+            var p1 = new Vector(this.center.x - this.width / 2, this.center.y + this.height / 2, this.center.z);
+            var p2 = new Vector(this.center.x + this.width / 2, this.center.y + this.height / 2, this.center.z);
+            var p3 = new Vector(this.center.x + this.width / 2, this.center.y - this.height / 2, this.center.z);
+            var p4 = new Vector(this.center.x - this.width / 2, this.center.y - this.height / 2, this.center.z);
+            this.triangles.push(new Triangle([p1,p2,p3],null,null));
+            this.triangles.push(new Triangle([p1,p3,p4],null,null));   
+        }
 	};
 	Control.scene = new Scene(
 		shapes,
@@ -126,19 +197,42 @@ Control.loadScene = function() {
 	);
 }
 
-Control.iniciarPhotonMapping = function(){
+Control.startPhotonMapping = function(){
 
-	var ok = Control.controlarPrecondiciones();
+	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		// photonMappingManager.init ...
+		this.photonMapping = new PhotonMapping(300);
+        this.photonMapping.generatePhotons(this.scene);
+
+        this.generatePhotonImage();
+
+        this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
+
 	}
 }
 
-Control.rayTrace = function() {
-	let img = context.getImageData(0, 0, canvas.width, canvas.height);
+Control.generatePhotonImage = function(){
+    
+}
 
-	let pixel_size = {
+// Changes canvas width and heght to match viewport's aspect ratio 
+Control.adaptCanvasAspectRatio = function(viewport){
+    if (Control.getCanvasAspectRatio() > viewport.getAspectRatio()){
+        Control.setCanvasWidthAndHeight(canvas.width / Control.getCanvasAspectRatio() * viewport.getAspectRatio(), canvas.height);
+    }else if (viewport.getAspectRatio() < Control.getCanvasAspectRatio()){
+        Control.setCanvasWidthAndHeight(canvas.width, canvas.height / Control.getCanvasAspectRatio() * viewport.getAspectRatio());
+    }    
+}
+
+Control.rayTrace = function() {
+
+    // adjust canvas aspect ratio to match viewport's
+    Control.adaptCanvasAspectRatio(Control.scene.viewport);
+
+    let img = context.getImageData(0, 0, canvas.width, canvas.height);
+
+	let pixel_size = { 
 		width: Control.scene.viewport.width / canvas.width,
 		height: Control.scene.viewport.height / canvas.height
 	}
@@ -205,7 +299,7 @@ Control.rayTrace = function() {
 }
 
 Control.controlarPrecondiciones = function(){
-	if (configuracion == null){
+	if (config == null){
 		$.notify('Falta cargar la configuracion','warn');
 		return false;
 	}

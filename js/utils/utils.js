@@ -1,3 +1,27 @@
+
+var Utils = {};
+
+Utils.randomNormalDistribution = function (mean, stdev) {
+	return (((Math.random()*2-1)+(Math.random()*2-1)+(Math.random()*2-1))*stdev+mean);
+}
+
+Utils.randomUniformDistribution = function(minValue, maxValue){
+	var intervalSize = maxValue - minValue;
+	return (minValue + Math.random() * intervalSize);
+}
+
+/* Returns a random integer in the [minValue,maxValue] range */
+Utils.randomInteger = function(minValue, maxValue){
+	var intervalSize = maxValue - minValue + 1;
+	var targetValue = minValue + Math.floor(Math.random() * intervalSize)
+	return (targetValue > maxValue ? maxValue : targetValue);
+}
+
+Utils.randomBoolean = function(){
+	return (Math.random() > 0.5);
+}
+
+
 /* DATE FUNCTIONS */
 
 
@@ -772,28 +796,7 @@ function degreesToRadians(angle){
 
 /* PROBABILITY */
 
-/* Returns a random with normal distribution, defined by mean and stdev */
-function randomNormalDistribution(mean, stdev) {
-  return (((Math.random()*2-1)+(Math.random()*2-1)+(Math.random()*2-1))*stdev+mean);
-}
 
-/* Returns a random value between minValue and maxValue */
-function randomUniformDistribution(minValue, maxValue){
-	var intervalSize = maxValue - minValue;
-	return (minValue + Math.random() * intervalSize);
-}
-
-/* Returns a random integer between minValue and maxValue */
-function randomInteger(minValue, maxValue){
-	var intervalSize = maxValue - minValue + 1;
-	var targetValue = minValue + Math.floor(Math.random() * intervalSize)
-	return (targetValue > maxValue ? maxValue : targetValue);
-}
-
-/* Returns a random boolean value */
-function randomBoolean(){
-	return (Math.random() > 0.5);
-}
 
 /* EASING */
 

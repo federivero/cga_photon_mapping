@@ -1,7 +1,8 @@
-// deberia tambien tener Power? ni idea de como funciona eso
-function Light(transform, intensity) {
+
+function Light(transform, intensity, power) {
 	this.transform = transform;
 	this.intensity = intensity;
+	this.power = power;
 };
 
 Light.prototype = {
