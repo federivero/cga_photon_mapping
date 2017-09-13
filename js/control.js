@@ -6,14 +6,18 @@ var config = null;
 
 var Control = {};
 
+
 Control.initialize = function(){
     Control.eraseCanvas();
     Control.canvasStartupMessage();
     Control.initializeFileUpload();
-	Control.loadScene();
-	//Control.startPhotonMapping();
+	Control.loadScene();    
+    // adjust canvas aspect ratio to match viewport's
+    Control.adaptCanvasAspectRatio(Control.scene.viewport);
+	Control.startPhotonMapping();
+    Control.captureCanvas();
 	Control.rayTrace();
-
+    Control.captureCanvas();
     //Control.tests();
 }
 
@@ -202,18 +206,15 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(300);
+		this.photonMapping = new PhotonMapping(300000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
-
-        this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
-
 	}
 }
 
 Control.generatePhotonImage = function(){
-    
+    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);    
 }
 
 // Changes canvas width and heght to match viewport's aspect ratio 
@@ -226,9 +227,6 @@ Control.adaptCanvasAspectRatio = function(viewport){
 }
 
 Control.rayTrace = function() {
-
-    // adjust canvas aspect ratio to match viewport's
-    Control.adaptCanvasAspectRatio(Control.scene.viewport);
 
     let img = context.getImageData(0, 0, canvas.width, canvas.height);
 
@@ -314,4 +312,58 @@ Control.downloadCanvas = function(){
     downloadLink.setAttribute('download', "canvasImage.jpg");
     downloadLink.href = canvasImage;
     downloadLink.click();
+}
+
+var imageHistory = [];
+var currentImage = -1;
+
+// adds the current canvas to the image history
+Control.captureCanvas = function(){
+    var captureCanvas = document.createElement('canvas');
+    var captureContext = captureCanvas.getContext('2d');
+    captureCanvas.width = canvas.width;
+    captureCanvas.height = canvas.height;   
+    captureContext.drawImage(canvas, 0, 0);
+    imageHistory.push(captureCanvas);
+
+    currentImage++;
+
+    if (imageHistory.length > 1)
+        document.getElementById('btnPreviousImage').disabled = false;
+}
+
+Control.previousImage = function(){
+    if (currentImage > 0){
+        currentImage--;
+        this.displayCurrentImage();
+    }
+    this.updateControlButtons();
+}
+
+Control.nextImage = function(){
+    if (currentImage < (imageHistory.length - 1)){
+        currentImage++;
+        this.displayCurrentImage();
+    }
+    this.updateControlButtons();
+}
+
+Control.displayCurrentImage = function(){
+    var image = imageHistory[currentImage];
+    canvas.width = image.width;
+    canvas.height = image.height;
+    context.drawImage(image, 0, 0);
+}
+
+Control.updateControlButtons = function(){
+    if (currentImage > 0){
+        document.getElementById('btnPreviousImage').disabled = false;
+    }else{
+        document.getElementById('btnPreviousImage').disabled = true;
+    }
+    if (currentImage < (imageHistory.length - 1)){
+        document.getElementById('btnNextImage').disabled = false;
+    }else{
+        document.getElementById('btnNextImage').disabled = true;
+    }
 }

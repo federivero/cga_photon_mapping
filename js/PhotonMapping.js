@@ -103,6 +103,13 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 	var ccount = 0;
 
+	var xPixelDensity = scene.viewport.width / canvas.width;
+	var yPixelDensity = scene.viewport.height / canvas.height;
+
+	context.fillStyle = "black";
+	context.fillRect(0, 0, canvas.width, canvas.height);
+	var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
 	for (var i = 0; i < map.length; i++){
 
 		var vectorStart = map[i].position;
@@ -112,10 +119,17 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 		if (collision.length > 0){
 			ccount++;
-			// to-do: draw the photon in canvas;
+				
+			var x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
+			var y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
+			var pixelIndex = 4 * (y * canvas.width - x); // to-do: think!	
+			imageData.data[pixelIndex] = map[i].color.r;
+			imageData.data[pixelIndex + 1] = map[i].color.g;
+			imageData.data[pixelIndex + 2] = map[i].color.b;			
 		}
 	}
-	console.log(ccount);
+
+	context.putImageData(imageData, 0, 0);
 	
 }
 
