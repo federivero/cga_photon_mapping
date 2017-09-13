@@ -1,8 +1,10 @@
 const nPhong = 5
 
-function Shape(transform, color) {
+function Shape(transform, color, specular_constant, specular_color) {
 	this.transform = transform;
 	this.color = color;
+	this.specular_constant = specular_constant;
+	this.specular_color = specular_color;
 };
 
 Shape.prototype = {};
@@ -43,22 +45,29 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 		// if the current light is on the visible side
 		// and the point isn't shadowed by another one
 		if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
+			// Angle factor
 			light_direction = Vector.unit(light_direction, light_direction);
 			let dif_factor = light_direction.dot(normal);
-			ret_color.r += Math.max(0, dif_factor * this.color.r);
-			ret_color.g += Math.max(0, dif_factor * this.color.g);
-			ret_color.b += Math.max(0, dif_factor * this.color.b);
+			// Specular highlights
+			// esto esta levantado directo de unas diapositivas
+			let vect_V = v1.subtract(collision).unit();
+			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
+			let spec_RVnK_factor = this.specular_constant * Math.pow(vect_V.dot(vect_R), nPhong);
+			
+			ret_color.r += Math.max(0, dif_factor * this.color.r + spec_RVnK_factor * this.specular_color.r);
+			ret_color.g += Math.max(0, dif_factor * this.color.g + spec_RVnK_factor * this.specular_color.g);
+			ret_color.b += Math.max(0, dif_factor * this.color.b + spec_RVnK_factor * this.specular_color.b);
 		}
 	}
 	return ret_color;
 }
 
 // Calculate the color in 'collision' from the reflection
-shape.prototype.calculate_reflection_color = function(collision, p1, p2, depth, refraction_coefficient) {
+Shape.prototype.calculate_reflection_color = function(collision, p1, p2, depth, refraction_coefficient) {
 	return new Color();
 }
 
 // Calculate the color in 'collision' from the refraction
-shape.prototype.calculate_refraction_color = function(collision, p1, p2, depth, refraction_coefficient) {
+Shape.prototype.calculate_refraction_color = function(collision, p1, p2, depth, refraction_coefficient) {
 	return new Color();
 }

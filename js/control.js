@@ -136,7 +136,9 @@ Control.loadScene = function() {
                 null,
                 new Vector(3, 3, 3)
             ),
-            new Color(100, 40, 0)
+            new Color(100, 40, 0),
+			1,
+			new Color(100,100,100)
         ),
 		new Sphere(
             new Transform(
@@ -144,7 +146,9 @@ Control.loadScene = function() {
                 null,
                 new Vector(1, 1, 1)
             ),
-            new Color(20, 180, 40)
+            new Color(20, 180, 40),
+			1,
+			new Color(100,100,100)
         ),
 		new Sphere(
             new Transform(
@@ -152,7 +156,9 @@ Control.loadScene = function() {
                 null,
                 new Vector(15, 15, 15)
             ),
-            new Color(200, 180, 40)
+            new Color(200, 180, 40),
+			1,
+			new Color(100,100,100)
         )
 	];
 	let lights = [

@@ -1,9 +1,9 @@
 // Inherits from Shape
 // Triangle (all points in the same plane)
-function Triangle(points, transform, color) {
+function Triangle(points, transform, color, specular_constant, specular_color) {
 	this.points = points;
-	this.plane = new Plane(points, transform, color);
-	Shape.call(this, transform, color);
+	this.plane = new Plane(points, transform, color, specular_constant, specular_color);
+	Shape.call(this, transform, color, specular_constant, specular_color);
 }
 
 Triangle.sides = 3;

@@ -1,7 +1,7 @@
 // Inherits from Shape
 // Planed defined by points a, b, and c.
-function Plane(points, transform, color) {
-	Shape.call(this, transform, color);
+function Plane(points, transform, color, specular_constant, specular_color) {
+	Shape.call(this, transform, color, specular_constant, specular_color);
 	if (points == null || points.length != 3) {
 		throw new Error('Planes are defined by three points');
 	}
