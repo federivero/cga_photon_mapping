@@ -1,3 +1,5 @@
+const nPhong = 5
+
 function Shape(transform, color) {
 	this.transform = transform;
 	this.color = color;
@@ -24,6 +26,13 @@ Shape.prototype.calculate_normal = function(p, normal=null) {
 // by default it's the air
 Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=1) {
 	// Calculate light color
+	let light_component = this.calculate_light_color(collision, v1, v2);
+	// here call calculate_reflection_color and calculate_refraction_color with depth-1
+	return light_component;
+};
+
+// Calculate the color in 'collision' from the lights
+Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 	let light_direction = new Vector();
 	let normal = new Vector();
 	ret_color = new Color();
@@ -42,4 +51,14 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		}
 	}
 	return ret_color;
-};
+}
+
+// Calculate the color in 'collision' from the reflection
+shape.prototype.calculate_reflection_color = function(collision, p1, p2, depth, refraction_coefficient) {
+	return new Color();
+}
+
+// Calculate the color in 'collision' from the refraction
+shape.prototype.calculate_refraction_color = function(collision, p1, p2, depth, refraction_coefficient) {
+	return new Color();
+}
