@@ -26,6 +26,7 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	// Calculate light color
 	let light_direction = new Vector();
 	let normal = new Vector();
+	ret_color = new Color();
 	for(let i = 0, len = Control.scene.lights.length; i < len; ++i) {
 		light = Control.scene.lights[i];
 		light_direction = Vector.subtract(light.transform.position, collision, light_direction);
@@ -34,10 +35,11 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		// and the point isn't shadowed by another one
 		if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
 			light_direction = Vector.unit(light_direction, light_direction);
-			// TODO complete this
-			return this.color
-		} else {
-			return new Color (0, 0, 0);
+			let dif_factor = light_direction.dot(normal);
+			ret_color.r += Math.max(0, dif_factor * this.color.r);
+			ret_color.g += Math.max(0, dif_factor * this.color.g);
+			ret_color.b += Math.max(0, dif_factor * this.color.b);
 		}
 	}
+	return ret_color;
 };
