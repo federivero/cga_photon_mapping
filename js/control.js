@@ -24,25 +24,29 @@ Control.initialize = function(){
 Control.tests = function(){
 
     // plane collision test
-    var p = new Plane( [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)],
-            new Transform(
-                new Vector(0, 0, 25),
-                null,
-                new Vector(3, 3, 3)
-            ),
-            new Color(100, 40, 0) );
-
+    var p = new Plane(
+        [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)],
+        new Transform(
+            new Vector(0, 0, 25),
+            null,
+            new Vector(3, 3, 3)
+        ),
+        new Color(100, 40, 0),
+        0, 0, false
+    );
     //console.log(p.collide([new Vector(0,0,-1),  new Vector(0,2,1)]));
 
     // triangle collision test
-     var t = new Triangle( [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)],
-            new Transform(
-                new Vector(0, 0, 25),
-                null,
-                new Vector(3, 3, 3)
-            ),
-            new Color(100, 40, 0) );
-
+     var t = new Triangle(
+        [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)],
+        new Transform(
+            new Vector(0, 0, 25),
+            null,
+            new Vector(3, 3, 3)
+        ),
+        new Color(100, 40, 0),
+        0, 0, false
+    );
     console.log(t.collide([new Vector(0.2,0.2,-1),  new Vector(0.2,0.2,1)]));
     console.log(t.collide([new Vector(0.5,0.5,-1),  new Vector(0.5,0.5,1)]));
     console.log(t.collide([new Vector(1,1,-1),  new Vector(1,1,1)]));
@@ -138,7 +142,8 @@ Control.loadScene = function() {
             ),
             new Color(100, 40, 0),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            false
         ),
 		new Sphere(
             new Transform(
@@ -148,7 +153,8 @@ Control.loadScene = function() {
             ),
             new Color(20, 180, 40),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            false
         ),
 		new Sphere(
             new Transform(
@@ -156,9 +162,21 @@ Control.loadScene = function() {
                 null,
                 new Vector(15, 15, 15)
             ),
-            new Color(200, 180, 40),
+            new Color(20, 20, 20),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            true
+        ),
+        new Sphere(
+            new Transform(
+                new Vector(3, 0, -20),
+                null,
+                new Vector(10, 10, 10)
+            ),
+            new Color(20, 180, 40),
+            1,
+            new Color(100,100,100),
+            false
         )
 	];
 	let lights = [
@@ -195,8 +213,8 @@ Control.loadScene = function() {
             var p2 = new Vector(this.center.x + this.width / 2, this.center.y + this.height / 2, this.center.z);
             var p3 = new Vector(this.center.x + this.width / 2, this.center.y - this.height / 2, this.center.z);
             var p4 = new Vector(this.center.x - this.width / 2, this.center.y - this.height / 2, this.center.z);
-            this.triangles.push(new Triangle([p1,p2,p3],null,null));
-            this.triangles.push(new Triangle([p1,p3,p4],null,null));
+            this.triangles.push(new Triangle([p1,p2,p3],null,null,0,0,false));
+            this.triangles.push(new Triangle([p1,p3,p4],null,null,0,0,false));
         }
 	};
 	Control.scene = new Scene(
@@ -265,15 +283,15 @@ Control.rayTrace = function() {
             let v2 = pixels[row*canvas.width + col];
             let trace_result = Control.scene.trace(v1, v2);
             if (trace_result.found === true) {
-				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 1);
+				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
                 img.data[current_pos] = color.r;
                 img.data[current_pos + 1] = color.g;
                 img.data[current_pos + 2] = color.b;
                 img.data[current_pos + 3] = 255;
             } else {
-				img.data[current_pos] = 0;
-				img.data[current_pos + 1] = 0;
-				img.data[current_pos + 2] = 0;
+				img.data[current_pos] = Control.scene.background_color.r;
+				img.data[current_pos + 1] = Control.scene.background_color.g;
+				img.data[current_pos + 2] = Control.scene.background_color.b;
 				img.data[current_pos + 3] = 255;
 			}
 		}

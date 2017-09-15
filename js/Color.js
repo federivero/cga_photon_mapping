@@ -7,3 +7,11 @@ function Color(r, g, b) {
 Color.prototype = {
 
 };
+
+Color.prototype.clone = function() {
+	return new Color(
+		this.r,
+		this.g,
+		this.b
+	);
+}
