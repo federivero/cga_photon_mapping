@@ -5,7 +5,7 @@ PhotonMapEnum = {
 }
 
 PhotonMapping = function(photonCount){
-	
+
 	this.photonCount = photonCount || 0;
 	this.photonsPerLight = [];
 
@@ -36,34 +36,16 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 			var photon = new Photon(light.intensity, light.power / this.photonsPerLight[l].photonCount);
 
 			while (!photonAbsorbed){
+				let trace_result = scene.trace(vectorStart, vectorEnd);
 
-				let found = false;
-				let shortest_distance = -1;
-	            let nearest_shape = null;
-	            let nearest_collision = null;
-
-				scene.shapes.forEach(function(shape){
-					let collisions = shape.collide([vectorStart, vectorEnd]);
-	                collisions.forEach(function(current_collision) {
-	                    // for each collision, keep the closest point found yet
-	                    segment = Vector.subtract(current_collision, vectorStart, segment);
-	                    if (scene.inFrontOfCamera(segment) && (!found || (segment.length() < shortest_distance))) {
-	                        found = true;
-	                        shortestDistance = segment.length();
-	                        nearestShape = shape;
-	                        nearestCollision = current_collision;
-	                    }
-	                });
-				});
-
-				if (!found){
+				if (!trace_result.found){
 					photonAbsorbed = true; // photon lost in the darkness, actually
 				}else{
 					// store photon
 
 					// todo: russian roulette + handle reflection/refraction
 
-					photon.position = nearestCollision;
+					photon.position = trace_result.nearest_collision;
 					this.storePhoton(photon);
 					photonAbsorbed = true;
 				}
@@ -119,21 +101,16 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 		if (collision.length > 0){
 			ccount++;
-				
+
 			var x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
 			var y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
-			var pixelIndex = 4 * (y * canvas.width - x); // to-do: think!	
+			var pixelIndex = 4 * (y * canvas.width - x); // to-do: think!
 			imageData.data[pixelIndex] = map[i].color.r;
 			imageData.data[pixelIndex + 1] = map[i].color.g;
-			imageData.data[pixelIndex + 2] = map[i].color.b;			
+			imageData.data[pixelIndex + 2] = map[i].color.b;
 		}
 	}
 
 	context.putImageData(imageData, 0, 0);
-	
+
 }
-
-
-
-
-

@@ -11,7 +11,7 @@ Control.initialize = function(){
     Control.eraseCanvas();
     Control.canvasStartupMessage();
     Control.initializeFileUpload();
-	Control.loadScene();    
+	Control.loadScene();
     // adjust canvas aspect ratio to match viewport's
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
 	Control.startPhotonMapping();
@@ -24,7 +24,7 @@ Control.initialize = function(){
 Control.tests = function(){
 
     // plane collision test
-    var p = new Plane( [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)], 
+    var p = new Plane( [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)],
             new Transform(
                 new Vector(0, 0, 25),
                 null,
@@ -35,7 +35,7 @@ Control.tests = function(){
     //console.log(p.collide([new Vector(0,0,-1),  new Vector(0,2,1)]));
 
     // triangle collision test
-     var t = new Triangle( [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)], 
+     var t = new Triangle( [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)],
             new Transform(
                 new Vector(0, 0, 25),
                 null,
@@ -74,7 +74,7 @@ Control.eraseCanvas = function(){
 Control.setCanvasWidthAndHeight = function(w,h){
 
     canvas.style.width = w;
-    canvas.style.height = h;    
+    canvas.style.height = h;
 
     canvas.width = w;
     canvas.height = h;
@@ -196,7 +196,7 @@ Control.loadScene = function() {
             var p3 = new Vector(this.center.x + this.width / 2, this.center.y - this.height / 2, this.center.z);
             var p4 = new Vector(this.center.x - this.width / 2, this.center.y - this.height / 2, this.center.z);
             this.triangles.push(new Triangle([p1,p2,p3],null,null));
-            this.triangles.push(new Triangle([p1,p3,p4],null,null));   
+            this.triangles.push(new Triangle([p1,p3,p4],null,null));
         }
 	};
 	Control.scene = new Scene(
@@ -220,23 +220,23 @@ Control.startPhotonMapping = function(){
 }
 
 Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);    
+    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
 }
 
-// Changes canvas width and heght to match viewport's aspect ratio 
+// Changes canvas width and heght to match viewport's aspect ratio
 Control.adaptCanvasAspectRatio = function(viewport){
     if (Control.getCanvasAspectRatio() > viewport.getAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width / Control.getCanvasAspectRatio() * viewport.getAspectRatio(), canvas.height);
     }else if (viewport.getAspectRatio() < Control.getCanvasAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width, canvas.height / Control.getCanvasAspectRatio() * viewport.getAspectRatio());
-    }    
+    }
 }
 
 Control.rayTrace = function() {
 
     let img = context.getImageData(0, 0, canvas.width, canvas.height);
 
-	let pixel_size = { 
+	let pixel_size = {
 		width: Control.scene.viewport.width / canvas.width,
 		height: Control.scene.viewport.height / canvas.height
 	}
@@ -259,34 +259,13 @@ Control.rayTrace = function() {
 	}
 
     let v1 = Control.scene.camera;
-    // The dot product of this vector with any point shouldn't be negative
-    let direction = Control.scene.viewport.center.subtract(v1);
-    let segment = new Vector();
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
-            // from here onwards it's the Trace function, soon to be moved away
 			let current_pos = (row*canvas.width + col) * 4;
-			let found = false;
             let v2 = pixels[row*canvas.width + col];
-            let shortest_distance = -1;
-            let nearest_shape = null;
-            let nearest_collision = null;
-			Control.scene.shapes.forEach(function(shape){
-                let collisions = shape.collide([v1, v2]);
-                collisions.forEach(function(current_collision) {
-                    // for each collision, keep the closest point found yet
-                    // check if the vector is on the right side of the camera
-                    segment = Vector.subtract(current_collision, v1, segment);
-                    if ((segment.dot(direction) >= 0) && (!found || (segment.length() < shortest_distance))) {
-                        found = true;
-                        shortest_distance = segment.length();
-                        nearest_shape = shape;
-                        nearest_collision = current_collision;
-                    }
-                });
-			})
-            if (found === true) {
-				let color = nearest_shape.calculate_color(nearest_collision, v1, v2, 1);
+            let trace_result = Control.scene.trace(v1, v2);
+            if (trace_result.found === true) {
+				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 1);
                 img.data[current_pos] = color.r;
                 img.data[current_pos + 1] = color.g;
                 img.data[current_pos + 2] = color.b;
@@ -328,7 +307,7 @@ Control.captureCanvas = function(){
     var captureCanvas = document.createElement('canvas');
     var captureContext = captureCanvas.getContext('2d');
     captureCanvas.width = canvas.width;
-    captureCanvas.height = canvas.height;   
+    captureCanvas.height = canvas.height;
     captureContext.drawImage(canvas, 0, 0);
     imageHistory.push(captureCanvas);
 
