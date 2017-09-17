@@ -11,38 +11,45 @@ Control.initialize = function(){
     Control.eraseCanvas();
     Control.canvasStartupMessage();
     Control.initializeFileUpload();
-	Control.loadScene();    
+	Control.loadScene();
+
+    //K3D.load("models/fox.obj", Control.parse_obj_model);
+
     // adjust canvas aspect ratio to match viewport's
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
 	Control.startPhotonMapping();
-    Control.captureCanvas();
+    Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
 	Control.rayTrace();
-    Control.captureCanvas();
+    Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
     //Control.tests();
 }
 
 Control.tests = function(){
 
     // plane collision test
-    var p = new Plane( [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)], 
-            new Transform(
-                new Vector(0, 0, 25),
-                null,
-                new Vector(3, 3, 3)
-            ),
-            new Color(100, 40, 0) );
-
+    var p = new Plane(
+        [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)],
+        new Transform(
+            new Vector(0, 0, 25),
+            null,
+            new Vector(3, 3, 3)
+        ),
+        new Color(100, 40, 0),
+        0, 0, false
+    );
     //console.log(p.collide([new Vector(0,0,-1),  new Vector(0,2,1)]));
 
     // triangle collision test
-     var t = new Triangle( [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)], 
-            new Transform(
-                new Vector(0, 0, 25),
-                null,
-                new Vector(3, 3, 3)
-            ),
-            new Color(100, 40, 0) );
-
+     var t = new Triangle(
+        [new Vector(0,0,0), new Vector(1,0,0), new Vector(0,1,0)],
+        new Transform(
+            new Vector(0, 0, 25),
+            null,
+            new Vector(3, 3, 3)
+        ),
+        new Color(100, 40, 0),
+        0, 0, false
+    );
     console.log(t.collide([new Vector(0.2,0.2,-1),  new Vector(0.2,0.2,1)]));
     console.log(t.collide([new Vector(0.5,0.5,-1),  new Vector(0.5,0.5,1)]));
     console.log(t.collide([new Vector(1,1,-1),  new Vector(1,1,1)]));
@@ -53,12 +60,18 @@ Control.clickLnkCargarArchivo = function(){
 	document.getElementById('inputCargarArchivo').click();
 }
 
-Control.parsearConfiguracion = function(txtConfig){
+Control.parse_config = function(txtConfig){
 	var jsonConfig = JSON.parse(txtConfig);
 
     // todo: handle error in json
 
 	config = jsonConfig;
+}
+
+Control.parse_obj_model = function(obj_txt){
+
+    var parsed_obj = K3D.parse.fromOBJ(obj_txt);
+    console.log(parsed_obj);
 }
 
 Control.eraseCanvas = function(){
@@ -74,7 +87,7 @@ Control.eraseCanvas = function(){
 Control.setCanvasWidthAndHeight = function(w,h){
 
     canvas.style.width = w;
-    canvas.style.height = h;    
+    canvas.style.height = h;
 
     canvas.width = w;
     canvas.height = h;
@@ -101,28 +114,32 @@ Control.initializeFileUpload = function(){
         // Función llamada al seleccionar un archivo nuevo
         add: function(e, data){
             var file = data.files[0];
-            var reader = new FileReader();
-            reader.readAsText(file);
+            var extension = "";
+            var fileName = file.name;
+            if (fileName.includes(".")){
+                extension = fileName.substring(fileName.lastIndexOf("."))
+            }else{
+                $.notify("Archivo sin extensión", "error");
+                return;
+            }
+            if (EXTENSIONES_VALIDAS.indexOf(extension) == -1){
+                $.notify("Extensión inválida. Extensiones válidas: " + EXTENSIONES_VALIDAS, "error");
+                return;
+            }
 
-            reader.onloadend = function(){
-                var extension = "";
 
-                var fileName = archivo.name;
-                if (fileName.includes(".")){
-                    extension = fileName.substring(fileName.lastIndexOf("."))
-                }else{
-                    $.notify("Archivo sin extensión", "error");
-                    return;
-                }
-                if (EXTENSIONES_VALIDAS.indexOf(extension) == -1){
-                    $.notify("Extensión inválida. Extensiones válidas: " + EXTENSIONES_VALIDAS, "error");
-                    return;
-                }
-                var fileContent = reader.result;
-                if (extension == EXTENSION_JSON){
-                    parsearConfiguracion(fileContent);
-                }
+            if (extension == OBJ_FILE){
+                K3D.load(file);
+            }else if (extension == JSON_FILE){
+                var reader = new FileReader();
 
+                reader.readAsText(file);
+                reader.onloadend = function(){
+                    var file_content = reader.result;
+                    if (extension == JSON_FILE){
+                        Control.parse_config(file_content);
+                    }
+                }
             }
         }
     });
@@ -138,7 +155,8 @@ Control.loadScene = function() {
             ),
             new Color(100, 40, 0),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            false
         ),
 		new Sphere(
             new Transform(
@@ -148,7 +166,8 @@ Control.loadScene = function() {
             ),
             new Color(20, 180, 40),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            false
         ),
 		new Sphere(
             new Transform(
@@ -156,9 +175,21 @@ Control.loadScene = function() {
                 null,
                 new Vector(15, 15, 15)
             ),
-            new Color(200, 180, 40),
+            new Color(20, 20, 20),
 			1,
-			new Color(100,100,100)
+			new Color(100,100,100),
+            true
+        ),
+        new Sphere(
+            new Transform(
+                new Vector(3, 0, -20),
+                null,
+                new Vector(10, 10, 10)
+            ),
+            new Color(20, 180, 40),
+            1,
+            new Color(100,100,100),
+            false
         )
 	];
 	let lights = [
@@ -195,8 +226,8 @@ Control.loadScene = function() {
             var p2 = new Vector(this.center.x + this.width / 2, this.center.y + this.height / 2, this.center.z);
             var p3 = new Vector(this.center.x + this.width / 2, this.center.y - this.height / 2, this.center.z);
             var p4 = new Vector(this.center.x - this.width / 2, this.center.y - this.height / 2, this.center.z);
-            this.triangles.push(new Triangle([p1,p2,p3],null,null));
-            this.triangles.push(new Triangle([p1,p3,p4],null,null));   
+            this.triangles.push(new Triangle([p1,p2,p3],null,null,0,0,false));
+            this.triangles.push(new Triangle([p1,p3,p4],null,null,0,0,false));
         }
 	};
 	Control.scene = new Scene(
@@ -220,23 +251,23 @@ Control.startPhotonMapping = function(){
 }
 
 Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);    
+    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
 }
 
-// Changes canvas width and heght to match viewport's aspect ratio 
+// Changes canvas width and heght to match viewport's aspect ratio
 Control.adaptCanvasAspectRatio = function(viewport){
     if (Control.getCanvasAspectRatio() > viewport.getAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width / Control.getCanvasAspectRatio() * viewport.getAspectRatio(), canvas.height);
     }else if (viewport.getAspectRatio() < Control.getCanvasAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width, canvas.height / Control.getCanvasAspectRatio() * viewport.getAspectRatio());
-    }    
+    }
 }
 
 Control.rayTrace = function() {
 
     let img = context.getImageData(0, 0, canvas.width, canvas.height);
 
-	let pixel_size = { 
+	let pixel_size = {
 		width: Control.scene.viewport.width / canvas.width,
 		height: Control.scene.viewport.height / canvas.height
 	}
@@ -259,42 +290,21 @@ Control.rayTrace = function() {
 	}
 
     let v1 = Control.scene.camera;
-    // The dot product of this vector with any point shouldn't be negative
-    let direction = Control.scene.viewport.center.subtract(v1);
-    let segment = new Vector();
 	for (let row = 0; row < canvas.height; ++row) {
 		for (let col = 0; col < canvas.width; ++col) {
-            // from here onwards it's the Trace function, soon to be moved away
 			let current_pos = (row*canvas.width + col) * 4;
-			let found = false;
             let v2 = pixels[row*canvas.width + col];
-            let shortest_distance = -1;
-            let nearest_shape = null;
-            let nearest_collision = null;
-			Control.scene.shapes.forEach(function(shape){
-                let collisions = shape.collide([v1, v2]);
-                collisions.forEach(function(current_collision) {
-                    // for each collision, keep the closest point found yet
-                    // check if the vector is on the right side of the camera
-                    segment = Vector.subtract(current_collision, v1, segment);
-                    if ((segment.dot(direction) >= 0) && (!found || (segment.length() < shortest_distance))) {
-                        found = true;
-                        shortest_distance = segment.length();
-                        nearest_shape = shape;
-                        nearest_collision = current_collision;
-                    }
-                });
-			})
-            if (found === true) {
-				let color = nearest_shape.calculate_color(nearest_collision, v1, v2, 1);
+            let trace_result = Control.scene.trace(v1, v2);
+            if (trace_result.found === true) {
+				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
                 img.data[current_pos] = color.r;
                 img.data[current_pos + 1] = color.g;
                 img.data[current_pos + 2] = color.b;
                 img.data[current_pos + 3] = 255;
             } else {
-				img.data[current_pos] = 0;
-				img.data[current_pos + 1] = 0;
-				img.data[current_pos + 2] = 0;
+				img.data[current_pos] = Control.scene.background_color.r;
+				img.data[current_pos + 1] = Control.scene.background_color.g;
+				img.data[current_pos + 2] = Control.scene.background_color.b;
 				img.data[current_pos + 3] = 255;
 			}
 		}
@@ -324,11 +334,11 @@ var imageHistory = [];
 var currentImage = -1;
 
 // adds the current canvas to the image history
-Control.captureCanvas = function(){
+Control.captureCanvas = function(type){
     var captureCanvas = document.createElement('canvas');
     var captureContext = captureCanvas.getContext('2d');
     captureCanvas.width = canvas.width;
-    captureCanvas.height = canvas.height;   
+    captureCanvas.height = canvas.height;
     captureContext.drawImage(canvas, 0, 0);
     imageHistory.push(captureCanvas);
 
@@ -336,6 +346,8 @@ Control.captureCanvas = function(){
 
     if (imageHistory.length > 1)
         document.getElementById('btnPreviousImage').disabled = false;
+
+    //Control.upload_canvas_image_to_server(type);
 }
 
 Control.previousImage = function(){
@@ -373,3 +385,33 @@ Control.updateControlButtons = function(){
         document.getElementById('btnNextImage').disabled = true;
     }
 }
+
+ImageTypeEnum = {
+    PHOTON_GLOBAL_MAP : "PGM",
+    PHOTON_CAUSTIC_MAP : "PCM",
+    COMPLETE_RENDER : "CR"
+}
+
+Control.upload_canvas_image_to_server = function(type){
+
+    type = type || ImageTypeEnum.COMPLETE_RENDER;
+
+    var now = new Date();
+    var image_name = type + "_" + now.getMonth() + "_" + now.getDate() + "_" + now.getHours() + "_" + now.getMinutes() + "_" + now.getSeconds() + "_" + now.getMilliseconds() + ".jpg";
+    var canvas_image = canvas.toDataURL('image/jpeg', 1.0);
+    var parameters = { image_name: image_name, image_content: canvas_image};
+
+    var base_url = "http://www.randomit.com.uy/cga_photon_mapping_server";    
+    var relative_path = '/api/images'; 
+    
+    $.ajax({
+        url: base_url + relative_path,
+        type: "POST",
+        success: function(){ console.log("Upload successful"); },
+        error: function(){ console.log("Error while submitting image to server"); },
+        dataType: 'json',
+        data: JSON.stringify(parameters)
+    });
+
+}
+

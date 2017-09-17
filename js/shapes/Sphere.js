@@ -1,7 +1,7 @@
 // Inherits from Shape
 // A sphere of center 0,0,0 and radius 1. size and position works via the transform
-function Sphere(transform, color, specular_constant, specular_color) {
-	Shape.call(this, transform, color, specular_constant, specular_color);
+function Sphere(transform, diffuse_color, specular_constant, specular_color, is_mirror) {
+	Shape.call(this, transform, diffuse_color, specular_constant, specular_color, is_mirror);
 	if (transform.scale.x !== transform.scale.y || transform.scale.x !== transform.scale.z || transform.scale.y !== transform.scale.z) {
 		throw new Error('You tried to create a non-spherical sphere');
 	};

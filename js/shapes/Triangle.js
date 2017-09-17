@@ -1,9 +1,9 @@
 // Inherits from Shape
 // Triangle (all points in the same plane)
-function Triangle(points, transform, color, specular_constant, specular_color) {
+function Triangle(points, transform, diffuse_color, specular_constant, specular_color, is_mirror) {
 	this.points = points;
-	this.plane = new Plane(points, transform, color, specular_constant, specular_color);
-	Shape.call(this, transform, color, specular_constant, specular_color);
+	this.plane = new Plane(points, transform, diffuse_color, specular_constant, specular_color, is_mirror);
+	Shape.call(this, transform, diffuse_color, specular_constant, specular_color, is_mirror);
 }
 
 Triangle.sides = 3;
@@ -18,7 +18,7 @@ Triangle.prototype.collide = function (ray) {
 		var p = planeCollisionResult[0];
 		var collision = true;
 		for (var i = 0; i < Triangle.sides; i++){
-			// test if the point is to the 'right' of each side. 
+			// test if the point is to the 'right' of each side.
 			// If true for each side, then the ray collides
 			var side = this.points[(i+1) % Triangle.sides].subtract(this.points[i]);
 			// to-do: precalculate sides of the triangle
@@ -26,7 +26,7 @@ Triangle.prototype.collide = function (ray) {
 			if (this.plane.normal.dot( side.cross(c) ) < 0){ // p is to the 'left' of the side
 				collision = false;
 				break;
-			} 
+			}
 		}
 		if (collision){
 			collisionResult.push(p);
