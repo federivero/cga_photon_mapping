@@ -57,7 +57,7 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 				});
 
 				if (!found){
-					photonAbsorbed = true; // photon lost in the darkness, actually
+					photonAbsorbed = true; // photon lost in the darkness, for real
 				}else{
 					// store photon
 

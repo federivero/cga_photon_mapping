@@ -4,5 +4,9 @@
 			"x" : 1200,
 			"y" : 500
 		}
+	},
+	"scene" : {
+		"modelos" : [ "models/file1.obj"],
+		"shapes" : []
 	}
 }
