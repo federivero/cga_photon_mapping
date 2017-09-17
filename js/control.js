@@ -25,8 +25,10 @@ Control.initialize = function(){
 }
 
 Control.tests = function(){
+    console.log(Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, new Vector(0,1,0)));
 
     // plane collision test
+    /*
     var p = new Plane(
         [new Vector(0,1,0), new Vector(1,0,0), new Vector(1,1,0)],
         new Transform(
@@ -54,6 +56,7 @@ Control.tests = function(){
     console.log(t.collide([new Vector(0.5,0.5,-1),  new Vector(0.5,0.5,1)]));
     console.log(t.collide([new Vector(1,1,-1),  new Vector(1,1,1)]));
     console.log(t.collide([new Vector(0,-0.1,-1),  new Vector(0,-0.1,1)]));
+    */
 }
 
 Control.clickLnkCargarArchivo = function(){

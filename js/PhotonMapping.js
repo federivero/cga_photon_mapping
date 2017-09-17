@@ -12,7 +12,7 @@ PhotonMapping = function(photonCount){
 	this.photonMap = [];
 }
 
-PhotonMapping.PHOTON_TOLERANCE = 3;
+PhotonMapping.PHOTON_TOLERANCE = 1;
 
 PhotonMapping.prototype.generatePhotons = function(scene){
 
@@ -123,16 +123,17 @@ PhotonMapping.prototype.get_map = function(type){
 }
 
 /*
-	Returns photons from a given shape near desired position.
+	Returns photons near desired position. Option: limit to photons in a given shape
 */
-PhotonMapping.prototype.get_photons = function(map_type, position, shape = null){
+PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = PhotonMapping.PHOTON_TOLERANCE, shape = null){
 	var map = this.get_map(map_type);
 	var result = [];
 	for (var i = 0; i < map.length; i++){
-		if (map[i].shape == shape && 
-				map[i].position.distanceTo(position) <= PhotonMapping.PHOTON_TOLERANCE){
+		if ((map[i].shape == shape || shape == null) && 
+				map[i].position.distanceTo(position) <= tolerance){
 			result.push(map[i])
 		}
 	}
+	return result;
 }
 

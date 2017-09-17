@@ -74,6 +74,9 @@ Vector.prototype = {
 	init: function(x, y, z) {
 	this.x = x; this.y = y; this.z = z;
 	return this;
+	},
+	distanceTo: function(b){	
+		return Math.sqrt(this.dot(b));
 	}
 };
 
@@ -141,6 +144,3 @@ Vector.fromArray = function(a) {
 Vector.angleBetween = function(a, b) {
 	return a.angleTo(b);
 };
-Vector.distanceTo = function(a, b){
-	return Math.sqrt(a.dot(b));
-}
