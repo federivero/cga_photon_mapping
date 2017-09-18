@@ -7,6 +7,7 @@ Scene = function(shapes, lights, camera, viewport){
 	this.viewport = viewport;
 	// TODO: specify background_color in the constructor
 	this.background_color = new Color();
+	this.air_refraction_coefficient = 1;
 }
 
 Scene.prototype.calculateScenePower = function(){

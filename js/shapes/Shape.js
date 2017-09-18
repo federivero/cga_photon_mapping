@@ -1,12 +1,15 @@
 const nPhong = 5
 
-function Shape(transform, diffuse_color, specular_constant, specular_color, is_mirror) {
+function Shape(transform, diffuse_color, specular_constant,
+			   specular_color, is_mirror, transparency=0, refraction_coefficient=0) {
 	this.transform = transform;
 	this.diffuse_color = diffuse_color;
 	this.specular_constant = specular_constant;
 	this.specular_color = specular_color;
 	// is_mirror distinguishes between a reflective surface and one that is merely shiny
 	this.is_mirror = is_mirror;
+	this.transparency = transparency;
+	this.refraction_coefficient = refraction_coefficient;
 };
 
 Shape.prototype = {};
@@ -28,7 +31,7 @@ Shape.prototype.calculate_normal = function(p, normal=null) {
 // 'depth' determines how many recursive steps will be done (for reflection and refraction)
 // 'refraction_coefficient' is the refraction coefficient of the material from where the ray is coming from
 // by default it's the air
-Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=1) {
+Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=Control.scene.air_refraction_coefficient) {
 	// Calculate light color
 	let light_component = this.calculate_light_color(collision, v1, v2);
 	let specular_component, refraction_component;
@@ -38,15 +41,33 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			specular_component = this.calculate_specular_color(
 				collision, v1, v2, depth-1, refraction_coefficient
 			);
-		} else{
+		} else {
 			specular_component = new Color();
 		}
+		if (this.transparency > 0) {
+			refraction_component = this.calculate_refraction_color(
+				collision, v1, v2, depth-1, refraction_coefficient
+			)
+		} else {
+			refraction_component = new Color();
+		}
 	}
-	// here call calculate_specular_color and calculate_refraction_color with depth-1
 	return new Color(
-		light_component.r + this.specular_constant * specular_component.r,
-		light_component.g + this.specular_constant * specular_component.g,
-		light_component.b + this.specular_constant * specular_component.b
+		(
+			light_component.r
+			+ this.specular_constant * specular_component.r
+			+ this.transparency * refraction_component.r
+		),
+		(
+			light_component.g
+			+ this.specular_constant * specular_component.g
+			+ this.transparency * refraction_component.g
+		),
+		(
+			light_component.b
+			+ this.specular_constant * specular_component.b
+			+ this.transparency * refraction_component.b
+		)
 	);
 };
 
@@ -81,16 +102,16 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 // Calculate the reflection component of the color in 'collision'
 Shape.prototype.calculate_specular_color = function(collision, v1, v2, depth, refraction_coefficient) {
 	let normal = this.calculate_normal(collision);
-	// TODO: when adding refraction
-	// if (this->refraccion == material) {
-	// 	normal = normal.negado();
-	// }
+	if (this.refraction_coefficient == refraction_coefficient) {
+		normal = Vector.negative(normal, normal);
+	}
 	let source_direction = v1.subtract(collision);
 	Vector.unit(source_direction, source_direction);
 	// Simetrizar source_direction respecto a la normal
 	let reflection_direction = normal.multiply(2 * (normal.dot(source_direction)));
 	// Un punto en la direccion de reflection_direction
 	let reflection_v2 = reflection_direction.add(collision);
+
 	let trace_result = Control.scene.trace(collision, reflection_v2, this);
 	if (trace_result.found === true) {
 		return x = trace_result.nearest_shape.calculate_color(
@@ -98,13 +119,64 @@ Shape.prototype.calculate_specular_color = function(collision, v1, v2, depth, re
 			collision,
 			reflection_v2,
 			depth, refraction_coefficient
-		)
+		);
 	} else {
-		return Control.scene.background_color.clone()
+		return Control.scene.background_color.clone();
 	}
 }
 
 // Calculate the refraction component of the color in 'collision'
+// limitation: there can't be a transparent thing inside of another one
+// to solve this refraction_coefficient should be a stack
 Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, refraction_coefficient) {
-	return new Color();
+	//para calcular el vector de salida:
+	//		-transformo el vector de incidencia en uno que sale del punto colision (direccionFuente)
+	//		-calculo el cross product entre direccionFuente y la normal para hallar el vector perpendicular
+	//		-calculo el angulo entre el direccionFuente y la normal
+	//		-calculo el angulo de salida usando los materiales
+	//		-roto usando la matriz de rotacion respecto a ese angulo y el eje es el del cross product
+	//		-si todo sale bien me sale un vector para el lado correcto
+	let normal = this.calculate_normal(collision);
+	if (this.refraction_coefficient == refraction_coefficient) {
+		normal = Vector.negative(normal, normal);
+	}
+	let source_direction = v1.subtract(collision);
+	Vector.unit(source_direction, source_direction);
+
+	let entry_angle = source_direction.angleTo(normal);
+
+	let axis = normal.cross(source_direction);
+	Vector.unit(axis, axis);
+	//logica de adentro/afuera: si el rayo viene con el mismo material es que estoy adentro y por lo tanto tengo que salir afuera
+	//esto implica que no puede haber un objeto refractante dentro de otro
+	let opposite_refraction_coefficient;
+	if (this.refraction_coefficient !== refraction_coefficient) {
+		opposite_refraction_coefficient = this.refraction_coefficient;
+	} else {
+		opposite_refraction_coefficient = Control.scene.air_refraction_coefficient;
+	}
+	// total internal reflection
+	let critical_angle = Math.asin(opposite_refraction_coefficient / refraction_coefficient);
+	if (entry_angle >= critical_angle) {
+		// TODO: is this right??
+		return new Color();
+	}
+	let exit_angle = Math.asin( (Math.sin(entry_angle) * (refraction_coefficient / opposite_refraction_coefficient)) );
+
+	let exit_vector = normal.negative().rotate(axis, exit_angle);
+	// don't collide with the exit surface
+	let collision_no_error = exit_vector.multiply(0.0001);
+	Vector.add(collision, collision_no_error, collision_no_error);
+	// repurpose exit_vector into a new into v2
+	Vector.add(exit_vector, collision_no_error, exit_vector);
+	// shape to ignore is null so it can collide with itself
+	trace_result = Control.scene.trace(collision_no_error, exit_vector);
+	if (trace_result.found === true) {
+		return trace_result.nearest_shape.calculate_color(
+			trace_result.nearest_collision, collision, exit_vector,
+			depth, opposite_refraction_coefficient
+		)
+	} else {
+		return Control.scene.background_color.clone();
+	}
 }

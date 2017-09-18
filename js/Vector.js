@@ -77,6 +77,35 @@ Vector.prototype = {
 	},
 	distanceTo: function(b){	
 		return Math.sqrt(this.dot(b));
+	},
+	rotate: function(axis, angle) {
+		// https://en.wikipedia.org/wiki/Rotation_matrix
+		let axis_n = axis.unit();
+		let cos0 = Math.cos(angle);
+		let sin0 = Math.sin(angle);
+		let rotation_matrix = [
+			[
+				cos0 + sqr(axis_n.x) * (1 - cos0),
+				axis_n.x * axis_n.y * (1 - cos0) - axis_n.z * sin0,
+				axis_n.x * axis_n.z * (1 - cos0) + axis_n.y * sin0
+			],
+			[
+				axis_n.y * axis_n.x * (1 - cos0) + axis_n.z * sin0,
+				cos0 + sqr(axis_n.y) * (1 - cos0),
+				axis_n.y * axis_n.z * (1 - cos0) - axis_n.x * sin0
+			],
+			[
+				axis_n.z * axis_n.x * (1 - cos0) - axis_n.y * sin0,
+				axis_n.z * axis_n.y * (1 - cos0) + axis_n.x * sin0,
+				cos0 + sqr(axis_n.z) * (1 - cos0)
+			]
+		];
+		// save allocations
+		axis_n.x = this.x * rotation_matrix[0][0] + this.y * rotation_matrix[0][1] + this.z * rotation_matrix[0][2];
+		axis_n.y = this.x * rotation_matrix[1][0] + this.y * rotation_matrix[1][1] + this.z * rotation_matrix[1][2]
+		axis_n.z = this.x * rotation_matrix[2][0] + this.y * rotation_matrix[2][1] + this.z * rotation_matrix[2][2]
+
+		return axis_n;
 	}
 };
 
@@ -119,6 +148,35 @@ Vector.unit = function(a, b) {
 	b.z = a.z / length;
 	return b;
 };
+Vector.rotate = function(a, axis, angle, b) {
+	// https://en.wikipedia.org/wiki/Rotation_matrix
+	Vector.unit(axis, b);
+	let cos0 = Math.cos(angle);
+	let sin0 = Math.sin(angle);
+	let rotation_matrix = [
+		[
+			cos0 + sqr(b.x) * (1 - cos0),
+			b.x * b.y * (1 - cos0) - b.z * sin0,
+			b.x * b.z * (1 - cos0) + b.y * sin0
+		],
+		[
+			b.y * b.x * (1 - cos0) + b.z * sin0,
+			cos0 + sqr(b.y) * (1 - cos0),
+			b.y * b.z * (1 - cos0) - b.x * sin0
+		],
+		[
+			b.z * b.x * (1 - cos0) - b.y * sin0,
+			b.z * b.y * (1 - cos0) + b.x * sin0,
+			cos0 + sqr(b.z) * (1 - cos0)
+		]
+	];
+	// save allocations
+	b.x = a.x * rotation_matrix[0][0] + a.y * rotation_matrix[0][1] + a.z * rotation_matrix[0][2];
+	b.y = a.x * rotation_matrix[1][0] + a.y * rotation_matrix[1][1] + a.z * rotation_matrix[1][2]
+	b.z = a.x * rotation_matrix[2][0] + a.y * rotation_matrix[2][1] + a.z * rotation_matrix[2][2]
+
+	return b;
+}
 
 // Vector.randomDirection() returns a vector with a length of 1 and a statistically uniform direction.
 // Vector.lerp() performs linear interpolation between two vectors.
