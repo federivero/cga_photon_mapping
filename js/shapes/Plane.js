@@ -6,9 +6,14 @@ function Plane(points, transform, diffuse_color, specular_constant, specular_col
 		throw new Error('Planes are defined by three points');
 	}
 	// check if points do not belong to the same plane
-	this.normal = (points[1].subtract(points[0])).cross(points[2].subtract(points[1]));
+	// bruno's implementation:
+	this.normal = (points[0].subtract(points[1])).cross(points[2].subtract(points[1]));
 	// 'd' is calculated by N . P = -d, with p any point in the plane.
-	this.d = points[0].dot(this.normal);
+	this.d = - points[0].dot(this.normal);
+        // fede's implementation:
+        //this.normal = (points[1].subtract(points[0])).cross(points[2].subtract(points[1]));
+	// 'd' is calculated by N . P = -d, with p any point in the plane.
+	//this.d = points[0].dot(this.normal);
 	this.points = points;
 };
 
@@ -22,12 +27,15 @@ Plane.prototype.collide = function (ray) {
 	* Entonces t = -(N . p1 + d) / (N . (p2 - p1)), donde N es la normal del plano
 	*/
 	// Calculo N . (p2 - p1) para ver si hay intersección
-	var denominator = this.normal.dot((ray[1].subtract(ray[0])));
+	let aux = ray[1].subtract(ray[0]);
+	let denominator = this.normal.dot(aux);
 	if (denominator == 0.0)
 		return [];
-	var numerator = -1 * (this.normal.dot(ray[0]) + this.d);
-	var t = numerator / denominator;
-	var intersection = ray[0].add( ray[1].subtract(ray[0]).multiply(t) );
+	let numerator = -1 * (this.normal.dot(ray[0]) + this.d);
+	let t = numerator / denominator;
+        let intersection = aux;
+        Vector.multiply(intersection, t, intersection);
+        Vector.add(ray[0], intersection, intersection);
 	return [intersection];
 };
 

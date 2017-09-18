@@ -201,11 +201,65 @@ Control.loadScene = function() {
                 new Vector(2, 2, 2)
             ),
             new Color(0, 0, 0),
-			1,
-			new Color(100,100,100),
+            1,
+            new Color(100,100,100),
             false,
             1.0,
             1.5
+        ),
+        new Plane(
+            [
+                new Vector(0,0,50),
+                new Vector(1,0,50),
+                new Vector(0,1,50),
+            ],
+            new Transform(
+                new Vector(0, 0, 0),
+                null,
+                new Vector(0, 0, 0)
+            ),
+            new Color(230, 220, 35),
+            0,
+            new Color(100,100,100),
+            false,
+            0,
+            0
+        ),
+        new Plane(
+            [
+                new Vector(-30,0,0),
+                new Vector(-30,1,0),
+                new Vector(-30,0,-1),
+            ],
+            new Transform(
+                new Vector(0, 0, 0),
+                null,
+                new Vector(0, 0, 0)
+            ),
+            new Color(230, 40, 190),
+            0,
+            new Color(100,100,100),
+            false,
+            0,
+            0
+        ),
+        new Plane(
+            [
+                new Vector(30,0,0),
+                new Vector(30,0,-1),
+                new Vector(30,1,0),
+            ],
+            new Transform(
+                new Vector(0, 0, 0),
+                null,
+                new Vector(0, 0, 0)
+            ),
+            new Color(130, 40, 10),
+            0,
+            new Color(100,100,100),
+            false,
+            0,
+            0
         )
 	];
 	let lights = [
