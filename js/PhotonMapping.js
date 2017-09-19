@@ -98,7 +98,7 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 			var x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
 			var y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
-			var pixelIndex = 4 * (y * canvas.width - x); // to-do: think!
+			var pixelIndex = 4 * ( canvas.width * (canvas.height - y) + x);
 			imageData.data[pixelIndex] = map[i].color.r;
 			imageData.data[pixelIndex + 1] = map[i].color.g;
 			imageData.data[pixelIndex + 2] = map[i].color.b;
@@ -129,11 +129,10 @@ PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = P
 	var map = this.get_map(map_type);
 	var result = [];
 	for (var i = 0; i < map.length; i++){
-		if ((map[i].shape == shape || shape == null) && 
+		if ((map[i].shape == shape || shape == null) &&
 				map[i].position.distanceTo(position) <= tolerance){
 			result.push(map[i])
 		}
 	}
 	return result;
 }
-
