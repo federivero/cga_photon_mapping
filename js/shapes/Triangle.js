@@ -23,7 +23,7 @@ Triangle.prototype.collide = function (ray) {
 			var side = this.points[(i+1) % Triangle.sides].subtract(this.points[i]);
 			// to-do: precalculate sides of the triangle
 			var c = p.subtract(this.points[i]);
-			if (this.plane.normal.dot( side.cross(c) ) < 0){ // p is to the 'left' of the side
+			if (this.plane.normal.dot( side.cross(c) ) > 0){ // p is to the 'left' of the side
 				collision = false;
 				break;
 			}

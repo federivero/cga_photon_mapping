@@ -13,9 +13,9 @@ Control.initialize = function(){
     Control.initializeFileUpload();
 	Control.loadScene();
 
-    K3D.load("models/fox.obj", Control.parse_obj_model);
+    //K3D.load("models/fox.obj", Control.parse_obj_model);
 
-    //this.start_photon_mapping();
+    this.start_photon_mapping();
     //Control.tests();
 }
 
@@ -167,38 +167,38 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
-	let shapes = []; /*[
-		new Sphere(
+	let shapes = [
+        new Sphere(
             new Transform(
                 new Vector(0, 0, 25),
                 null,
                 new Vector(3, 3, 3)
             ),
             new Color(100, 40, 0),
-			1,
-			new Color(100,100,100),
+            1,
+            new Color(100,100,100),
             false
         ),
-		new Sphere(
+        new Sphere(
             new Transform(
                 new Vector(3, 0, 20),
                 null,
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40),
-			1,
-			new Color(100,100,100),
+            1,
+            new Color(100,100,100),
             false
         ),
-		new Sphere(
+        new Sphere(
             new Transform(
                 new Vector(-5, -4, 40),
                 null,
                 new Vector(15, 15, 15)
             ),
             new Color(20, 20, 20),
-			1,
-			new Color(100,100,100),
+            1,
+            new Color(100,100,100),
             true
         ),
         new Sphere(
@@ -225,11 +225,11 @@ Control.loadScene = function() {
             1.0,
             1.5
         ),
-        new Plane(
+        new Triangle(
             [
-                new Vector(0,0,50),
-                new Vector(1,0,50),
-                new Vector(0,1,50),
+                new Vector(-25,0,50),
+                new Vector(20,0,50),
+                new Vector(0,25,50),
             ],
             new Transform(
                 new Vector(0, 0, 0),
@@ -279,77 +279,21 @@ Control.loadScene = function() {
             0,
             0
         )
-	]; */
-	let lights = [
-		new PointLight(
-			new Transform(
-				new Vector(100, 80, 100), null, null
-			),
-			new Color(255, 255, 255),
-            100 // power
-		),
+    ];
+    let lights = [
         new PointLight(
             new Transform(
-                new Vector(-100, -80, -100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-       new PointLight(
-            new Transform(
-                new Vector(100, -80, -100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(-100, 80, -100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(-100, -80, 100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(100, 80, -100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(100, -80, 100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(-100, 80, 100), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        ),
-        new PointLight(
-            new Transform(
-                new Vector(0, 0, 150), null, null
+                new Vector(10, 8, 10), null, null
             ),
             new Color(255, 255, 255),
             100 // power
         )
-	];
-	let camera = new Vector(0,0,150)
-	let viewport = {
-		center: new Vector(0,0,140),
-		width: 20,
-		height: 10,
+    ];
+    let camera = new Vector(0,0,0)
+    let viewport = {
+        center: new Vector(0,0,10),
+        width: 20,
+        height: 10,
         getAspectRatio : function(){
             return this.width / this.height;
         },
@@ -373,7 +317,7 @@ Control.loadScene = function() {
             this.triangles.push(new Triangle([p1,p2,p3],null,null,0,0,false));
             this.triangles.push(new Triangle([p1,p3,p4],null,null,0,0,false));
         }
-	};
+    };
 	Control.scene = new Scene(
 		shapes,
 		lights,
