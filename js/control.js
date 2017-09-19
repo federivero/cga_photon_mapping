@@ -13,15 +13,19 @@ Control.initialize = function(){
     Control.initializeFileUpload();
 	Control.loadScene();
 
-    //K3D.load("models/fox.obj", Control.parse_obj_model);
+    K3D.load("models/fox.obj", Control.parse_obj_model);
 
+    //this.start_photon_mapping();
+    //Control.tests();
+}
+
+Control.start_photon_mapping = function(){
     // adjust canvas aspect ratio to match viewport's
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
-	Control.startPhotonMapping();
+    Control.startPhotonMapping();
     Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
-	Control.rayTrace();
+    Control.rayTrace();
     Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
-    //Control.tests();
 }
 
 Control.tests = function(){
@@ -74,7 +78,21 @@ Control.parse_config = function(txtConfig){
 Control.parse_obj_model = function(obj_txt){
 
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
-    console.log(parsed_obj);
+    var color = new Color(200,0,0);
+    for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
+        var verts = [];
+        for (var j = 0; j < 3; j++){
+            var v_i = parsed_obj.i_verts[i + j]; // vertex index
+            
+            var x = parsed_obj.c_verts[v_i];
+            var y = parsed_obj.c_verts[v_i+1];
+            var z = parsed_obj.c_verts[v_i+2];
+                        
+            verts.push(new Vector(x,y,z));
+        }
+        var t = new Triangle(verts, null, color, 0, color, false, 0, 0);
+        Control.scene.shapes.push(t);
+    }
 }
 
 Control.eraseCanvas = function(){
@@ -149,7 +167,7 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
-	let shapes = [
+	let shapes = []; /*[
 		new Sphere(
             new Transform(
                 new Vector(0, 0, 25),
@@ -207,19 +225,75 @@ Control.loadScene = function() {
             1.0,
             1.5
         )
-	];
+	]; */
 	let lights = [
 		new PointLight(
 			new Transform(
-				new Vector(10, 8, 10), null, null
+				new Vector(100, 80, 100), null, null
 			),
 			new Color(255, 255, 255),
             100 // power
-		)
+		),
+        new PointLight(
+            new Transform(
+                new Vector(-100, -80, -100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+       new PointLight(
+            new Transform(
+                new Vector(100, -80, -100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(-100, 80, -100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(-100, -80, 100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(100, 80, -100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(100, -80, 100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(-100, 80, 100), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        ),
+        new PointLight(
+            new Transform(
+                new Vector(0, 0, 150), null, null
+            ),
+            new Color(255, 255, 255),
+            100 // power
+        )
 	];
-	let camera = new Vector(0,0,0)
+	let camera = new Vector(0,0,150)
 	let viewport = {
-		center: new Vector(0,0,10),
+		center: new Vector(0,0,140),
 		width: 20,
 		height: 10,
         getAspectRatio : function(){
@@ -259,7 +333,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(300000);
+		this.photonMapping = new PhotonMapping(30000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();

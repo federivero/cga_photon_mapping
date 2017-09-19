@@ -93,7 +93,7 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 		var collision = scene.viewport.collidesWithRay([vectorStart, vectorEnd]);
 
-		if (collision.length > 0){
+		if (collision.length > 0){// && scene.inFrontOfCamera(collision[0])){
 			ccount++;
 
 			var x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
