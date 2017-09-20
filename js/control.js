@@ -83,11 +83,11 @@ Control.parse_obj_model = function(obj_txt){
         var verts = [];
         for (var j = 0; j < 3; j++){
             var v_i = parsed_obj.i_verts[i + j]; // vertex index
-            
+
             var x = parsed_obj.c_verts[v_i];
             var y = parsed_obj.c_verts[v_i+1];
             var z = parsed_obj.c_verts[v_i+2];
-                        
+
             verts.push(new Vector(x,y,z));
         }
         var t = new Triangle(verts, null, color, 0, color, false, 0, 0);
@@ -331,7 +331,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(30000);
+		this.photonMapping = new PhotonMapping(10000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
@@ -435,7 +435,7 @@ Control.captureCanvas = function(type){
     if (imageHistory.length > 1)
         document.getElementById('btnPreviousImage').disabled = false;
 
-    //Control.upload_canvas_image_to_server(type);
+    // Control.upload_canvas_image_to_server(type);
 }
 
 Control.previousImage = function(){
@@ -489,9 +489,9 @@ Control.upload_canvas_image_to_server = function(type){
     var canvas_image = canvas.toDataURL('image/jpeg', 1.0);
     var parameters = { image_name: image_name, image_content: canvas_image};
 
-    var base_url = "http://www.randomit.com.uy/cga_photon_mapping_server";    
-    var relative_path = '/api/images'; 
-    
+    var base_url = "http://www.randomit.com.uy/cga_photon_mapping_server";
+    var relative_path = '/api/images';
+
     $.ajax({
         url: base_url + relative_path,
         type: "POST",
@@ -502,4 +502,3 @@ Control.upload_canvas_image_to_server = function(type){
     });
 
 }
-

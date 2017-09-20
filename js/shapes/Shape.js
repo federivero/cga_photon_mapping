@@ -32,6 +32,7 @@ Shape.prototype.calculate_normal = function(p, normal=null) {
 // 'refraction_coefficient' is the refraction coefficient of the material from where the ray is coming from
 // by default it's the air
 Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=Control.scene.air_refraction_coefficient) {
+	// return this.calculate_diffuse_reflections(collision, v1, v2, depth-1, refraction_coefficient);
 	// Calculate light color
 	let light_component = this.calculate_light_color(collision, v1, v2);
 	let specular_component, refraction_component;
@@ -179,4 +180,17 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 	} else {
 		return Control.scene.background_color.clone();
 	}
+}
+
+Shape.prototype.calculate_diffuse_reflections = function(collision, v1, v2, depth, refraction_coefficient) {
+	// first get the nearby photons
+	photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
+	// then, integrate
+	power = 0;
+	for(let i = 0, leni = photons.length; i < leni; ++i) {
+		photon = photons[i];
+		power += photon.power;
+
+	}
+	return new Color(power*255, power*255, power*255);
 }

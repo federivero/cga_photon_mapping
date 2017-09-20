@@ -75,8 +75,12 @@ Vector.prototype = {
 	this.x = x; this.y = y; this.z = z;
 	return this;
 	},
-	distanceTo: function(b){	
-		return Math.sqrt(this.dot(b));
+	distanceTo: function(b){
+		return Math.sqrt(
+			Math.pow(this.x - b.x, 2)
+			+ Math.pow(this.y - b.y, 2)
+			+ Math.pow(this.z - b.z, 2)
+		);
 	},
 	rotate: function(axis, angle) {
 		// https://en.wikipedia.org/wiki/Rotation_matrix

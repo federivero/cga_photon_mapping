@@ -1,5 +1,5 @@
 
-PhotonMapEnum = {
+const PhotonMapEnum = {
 	GLOBAL : 0,
 	CAUSTIC : 1
 }
@@ -20,11 +20,8 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 
 	this.calculatePhotonsPerLight(scene.lights, scene.scenePower);
 
-	var segment = new Vector();
-
 	// shoot photons from each light
 	for (var l = 0; l < this.photonsPerLight.length; l++){
-
 		var light = this.photonsPerLight[l].light;
 		for (var p = 0; p < this.photonsPerLight[l].photonCount; p++){
 			var v = Vector.randomDirection();
@@ -55,11 +52,43 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 
 			}
 		}
-
 	}
-
-
+	// this.generateKDTree();
 }
+
+// PhotonMapping.prototype.generateKDTree = function() {
+// 	let data = this.photonMap.map(photon => {
+// 		// TODO: right now we are duplicating the coordinates
+// 		let arr = photon.position.toArray();
+// 		arr.push({additional: photon})
+// 		return arr
+// 	});
+// 	var k = 3;
+// 	var options = {
+// 		/**
+// 		 * Defines bucket (terminal node) maximal size (default: 10)
+// 		 */
+// 		bucketSize : 10,
+// 		/**
+// 		 * Data dimension (default: data[0].length)
+// 		 */
+// 		k : k,
+// 		/**
+// 		 * Dissimilarity function (default: sqrt)
+// 		 */
+// 		dissim : function(sum) {
+// 			return Math.sqrt(sum);
+// 		},
+// 		/**
+// 		 * Coordinate distance (default: (a-b)^2)
+// 		 */
+// 		coordinateDistance : function(a, b) {
+// 			var d = a - b;
+// 			return d * d;
+// 		}
+// 	};
+// 	this.photonKDTree = kdtree.buildTree(data, options);
+// }
 
 PhotonMapping.prototype.storePhoton = function(photon){
 	this.photonMap.push(photon);
@@ -126,9 +155,9 @@ PhotonMapping.prototype.get_map = function(type){
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
 PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = PhotonMapping.PHOTON_TOLERANCE, shape = null){
-	var map = this.get_map(map_type);
-	var result = [];
-	for (var i = 0; i < map.length; i++){
+	let map = this.get_map(map_type);
+	let result = [];
+	for (let i = 0, leni = map.length; i < leni; ++i){
 		if ((map[i].shape == shape || shape == null) &&
 				map[i].position.distanceTo(position) <= tolerance){
 			result.push(map[i])
