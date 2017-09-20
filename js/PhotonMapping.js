@@ -19,6 +19,7 @@ PhotonMapping = function(photonCount){
 }
 
 PhotonMapping.PHOTON_TOLERANCE = 1;
+PhotonMapping.MAX_PHOTON_BOUNCE = 4
 
 PhotonMapping.prototype.generatePhotons = function(scene){
 
@@ -27,35 +28,82 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 	this.calculatePhotonsPerLight(scene.lights, scene.scenePower);
 
 	// shoot photons from each light
-	for (var l = 0; l < this.photonsPerLight.length; l++){
-		var light = this.photonsPerLight[l].light;
-		for (var p = 0; p < this.photonsPerLight[l].photonCount; p++){
-			var v = Vector.randomDirection();
+	for (let l = 0; l < this.photonsPerLight.length; l++){
+		let light = this.photonsPerLight[l].light;
+		emitted_photons = this.photonsPerLight[l].photonCount;
+		// lifted straight from the book
+		while (emitted_photons--) {
+			let vector_end = Vector.randomDirection();
 			// shoot from light in direction v
-			var photonAbsorbed = false;
-			// to do: ask light for random point in case it's a non-punctual light
-			var vectorStart = light.transform.position;
-			var vectorEnd = v;
-			Vector.add(vectorStart, vectorEnd, vectorEnd);
-
-			var photon = new Photon(light.intensity, light.power / this.photonsPerLight[l].photonCount);
-
-			while (!photonAbsorbed){
-				let trace_result = scene.trace(vectorStart, vectorEnd);
-
+			let photonAbsorbed = false;
+			// TODO: ask light for random point in case it's a non-punctual light
+			let vector_start = light.transform.position;
+			Vector.add(vector_start, vector_end, vector_end);
+			let bounces = 0;
+			let current_color = light.color;
+			let shape = null;
+			// TODO: move depth to an external parameter
+			while (!photonAbsorbed && bounces < PhotonMapping.MAX_PHOTON_BOUNCE){
+				let trace_result = scene.trace(vector_start, vector_end, shape);
 				if (!trace_result.found){
 					photonAbsorbed = true; // photon lost in the darkness, for real
-				}else{
-					// store photon
+				} else {
+					// I'll use the monochromatic implementation but with colors for each photon
+					shape = trace_result.nearest_shape;
+					let collision = trace_result.nearest_collision;
+					let roulette = Math.random();
 
-					// todo: russian roulette + handle reflection/refraction
+					if (roulette < shape.diffuse_reflection_coefficient) {
+						// diffuse reflection
+						// don't save the first step
+						if (bounces !== 0) {
+							let photon = new Photon(
+								current_color, collision,
+								light.power / this.photonsPerLight[l].photonCount,
+								vector_start, shape
+							);
+							this.storePhoton(photon);
+						}
+						vector_start = collision
+						let normal = shape.calculate_normal(collision);
+						// random direction of bounce
+						let x, y, z;
+						do {
+							do {
+								// random number between -1 and 1
+								x = Math.random() * 2 - 1;
+								y = Math.random() * 2 - 1;
+								z = Math.random() * 2 - 1;
+								// use simple rejection sampling to find diffuse photon direction
+							} while (x*x + y*y + z*z > 1);
+							vector_end.x = x;
+							vector_end.y = y;
+							vector_end.z = z;
+						} while (vector_end.dot(normal) < 0);
+						Vector.add(collision, vector_end, vector_end);
+						current_color = shape.calculate_diffuse_photon_color(current_color);
 
-					photon.position = trace_result.nearest_collision;
-					photon.shape = trace_result.nearest_shape;
-					this.storePhoton(photon);
-					photonAbsorbed = true;
+					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
+						//specular reflection
+						photonAbsorbed = true;
+					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
+						//transmission
+						photonAbsorbed = true;
+					} else {
+						// absorption
+						// don't save the first step
+						if (bounces !== 0) {
+							let photon = new Photon(
+								current_color, collision,
+								light.power / this.photonsPerLight[l].photonCount,
+								vector_start, shape
+							);
+							this.storePhoton(photon);
+						}
+						photonAbsorbed = true;
+					}
+					++bounces;
 				}
-
 			}
 		}
 	}

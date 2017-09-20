@@ -175,9 +175,8 @@ Control.loadScene = function() {
                 new Vector(3, 3, 3)
             ),
             new Color(100, 40, 0),
-            1,
-            new Color(100,100,100),
-            false
+            0.5,
+            new Color(100, 40, 0)
         ),
         new Sphere(
             new Transform(
@@ -186,63 +185,34 @@ Control.loadScene = function() {
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40),
-            1,
-            new Color(100,100,100),
-            false
+            0.9,
+            new Color(100,100,100)
         ),
-        new Sphere(
-            new Transform(
-                new Vector(-5, -4, 40),
-                null,
-                new Vector(15, 15, 15)
-            ),
-            new Color(20, 20, 20),
-            1,
-            new Color(100,100,100),
-            true
-        ),
-        new Sphere(
-            new Transform(
-                new Vector(3, 0, -20),
-                null,
-                new Vector(10, 10, 10)
-            ),
-            new Color(20, 180, 40),
-            1,
-            new Color(100,100,100),
-            false
-        ),
-        new Sphere(
-            new Transform(
-                new Vector(1.5, 0, 10),
-                null,
-                new Vector(2, 2, 2)
-            ),
-            new Color(0, 0, 0),
-            1,
-            new Color(100,100,100),
-            false,
-            1.0,
-            1.5
-        ),
-        new Triangle(
-            [
-                new Vector(-25,0,50),
-                new Vector(20,0,50),
-                new Vector(0,25,50),
-            ],
-            new Transform(
-                new Vector(0, 0, 0),
-                null,
-                new Vector(0, 0, 0)
-            ),
-            new Color(230, 220, 35),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
-        ),
+        // new Sphere(
+        //     new Transform(
+        //         new Vector(3, 0, -20),
+        //         null,
+        //         new Vector(10, 10, 10)
+        //     ),
+        //     new Color(20, 180, 40),
+        //     0.5,
+        //     new Color(100,100,100)
+        // ),
+        // new Triangle(
+        //     [
+        //         new Vector(-25,0,50),
+        //         new Vector(20,0,50),
+        //         new Vector(0,25,50),
+        //     ],
+        //     new Transform(
+        //         new Vector(0, 0, 0),
+        //         null,
+        //         new Vector(0, 0, 0)
+        //     ),
+        //     new Color(230, 220, 35),
+        //     0,
+        //     new Color(100,100,100),
+        // ),
         new Plane(
             [
                 new Vector(-30,0,0),
@@ -254,12 +224,9 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(230, 40, 190),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
+            new Color(0, 0, 255),
+            0.9,
+            new Color(100,100,100)
         ),
         new Plane(
             [
@@ -272,12 +239,24 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(130, 40, 10),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
+            new Color(255, 0, 0),
+            0.9,
+            new Color(100,100,100)
+        ),
+        new Plane(
+            [
+                new Vector(0,0,60),
+                new Vector(1,0,60),
+                new Vector(0,1,60)
+            ],
+            new Transform(
+                new Vector(0, 0, 0),
+                null,
+                new Vector(0, 0, 0)
+            ),
+            new Color(0, 255, 0),
+            0.9,
+            new Color(100,100,100)
         )
     ];
     let lights = [
@@ -331,7 +310,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(10000);
+		this.photonMapping = new PhotonMapping(50000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();

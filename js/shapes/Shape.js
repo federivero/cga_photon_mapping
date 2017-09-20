@@ -1,11 +1,20 @@
 const nPhong = 5
 
-function Shape(transform, diffuse_color, specular_constant,
-			   specular_color, is_mirror, transparency=0, refraction_coefficient=0) {
+function Shape (transform,
+				diffuse_color, diffuse_reflection_coefficient,
+				specular_color, specular_coefficient=0,
+				is_mirror=false, transparency=0, refraction_coefficient=0) {
+	if (diffuse_reflection_coefficient + specular_coefficient + refraction_coefficient > 1) {
+		throw new Error('diffuse_reflection_coefficient + specular_coefficient + refraction_coefficient must be less than 1!');
+	}
+
 	this.transform = transform;
+
 	this.diffuse_color = diffuse_color;
-	this.specular_constant = specular_constant;
+	this.diffuse_reflection_coefficient = diffuse_reflection_coefficient;
+
 	this.specular_color = specular_color;
+	this.specular_coefficient = specular_coefficient;
 	// is_mirror distinguishes between a reflective surface and one that is merely shiny
 	this.is_mirror = is_mirror;
 	this.transparency = transparency;
@@ -38,7 +47,7 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	let specular_component, refraction_component;
 	if (depth > 0) {
 		// is_mirror distinguishes between a reflective surface and one that is merely shiny
-		if ((this.specular_constant > 0) && (this.is_mirror === true)) {
+		if ((this.specular_coefficient > 0) && (this.is_mirror === true)) {
 			specular_component = this.calculate_specular_color(
 				collision, v1, v2, depth-1, refraction_coefficient
 			);
@@ -56,20 +65,26 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	return new Color(
 		(
 			light_component.r
-			+ this.specular_constant * specular_component.r
+			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
 		),
 		(
 			light_component.g
-			+ this.specular_constant * specular_component.g
+			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
 		),
 		(
 			light_component.b
-			+ this.specular_constant * specular_component.b
+			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
 		)
 	);
+};
+
+// Calculate the color of a diffuse reflected photon
+Shape.prototype.calculate_diffuse_photon_color = function(incoming_color) {
+	// TODO: do this proper
+	return this.diffuse_color.clone();
 };
 
 // Calculate the color in 'collision' from the lights
@@ -90,7 +105,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			// esto esta levantado directo de unas diapositivas
 			let vect_V = v1.subtract(collision).unit();
 			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
-			let spec_RVnK_factor = this.specular_constant * Math.pow(vect_V.dot(vect_R), nPhong);
+			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), nPhong);
 
 			ret_color.r += Math.max(0, dif_factor * this.diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
 			ret_color.g += Math.max(0, dif_factor * this.diffuse_color.g + spec_RVnK_factor * this.specular_color.g);
