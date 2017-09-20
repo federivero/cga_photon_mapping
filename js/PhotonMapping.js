@@ -1,4 +1,7 @@
 
+// HACK: do this because I don't know how to use browserify
+let createKDTree = window.kdtree;
+
 const PhotonMapEnum = {
 	GLOBAL : 0,
 	CAUSTIC : 1
@@ -9,7 +12,10 @@ PhotonMapping = function(photonCount){
 	this.photonCount = photonCount || 0;
 	this.photonsPerLight = [];
 
-	this.photonMap = [];
+	this.photonMap = {
+		photons: [],
+		kdtree: null
+	};
 }
 
 PhotonMapping.PHOTON_TOLERANCE = 1;
@@ -53,45 +59,18 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 			}
 		}
 	}
-	// this.generateKDTree();
+	this.generateKDTree();
 }
 
-// PhotonMapping.prototype.generateKDTree = function() {
-// 	let data = this.photonMap.map(photon => {
-// 		// TODO: right now we are duplicating the coordinates
-// 		let arr = photon.position.toArray();
-// 		arr.push({additional: photon})
-// 		return arr
-// 	});
-// 	var k = 3;
-// 	var options = {
-// 		/**
-// 		 * Defines bucket (terminal node) maximal size (default: 10)
-// 		 */
-// 		bucketSize : 10,
-// 		/**
-// 		 * Data dimension (default: data[0].length)
-// 		 */
-// 		k : k,
-// 		/**
-// 		 * Dissimilarity function (default: sqrt)
-// 		 */
-// 		dissim : function(sum) {
-// 			return Math.sqrt(sum);
-// 		},
-// 		/**
-// 		 * Coordinate distance (default: (a-b)^2)
-// 		 */
-// 		coordinateDistance : function(a, b) {
-// 			var d = a - b;
-// 			return d * d;
-// 		}
-// 	};
-// 	this.photonKDTree = kdtree.buildTree(data, options);
-// }
+PhotonMapping.prototype.generateKDTree = function() {
+	let points = this.photonMap.photons.map(photon => {
+		return photon.position.toArray();
+	});
+	this.photonMap.kdtree = createKDTree(points);
+}
 
 PhotonMapping.prototype.storePhoton = function(photon){
-	this.photonMap.push(photon);
+	this.photonMap.photons.push(photon);
 }
 
 PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower){
@@ -104,33 +83,33 @@ PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower){
 // Draws the photons into the canvas.
 // type: the photon map to draw (global, caustic, etc)
 PhotonMapping.prototype.drawPhotonMap = function(type, scene){
-	var map = this.get_map(type);
+	let photon_map = this.get_map(type).photons;
 
-	var ccount = 0;
+	let ccount = 0;
 
-	var xPixelDensity = scene.viewport.width / canvas.width;
-	var yPixelDensity = scene.viewport.height / canvas.height;
+	let xPixelDensity = scene.viewport.width / canvas.width;
+	let yPixelDensity = scene.viewport.height / canvas.height;
 
 	context.fillStyle = "black";
 	context.fillRect(0, 0, canvas.width, canvas.height);
-	var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+	let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
-	for (var i = 0; i < map.length; i++){
+	for (let i = 0; i < photon_map.length; i++){
 
-		var vectorStart = map[i].position;
-		var vectorEnd = scene.camera;
+		let vectorStart = photon_map[i].position;
+		let vectorEnd = scene.camera;
 
-		var collision = scene.viewport.collidesWithRay([vectorStart, vectorEnd]);
+		let collision = scene.viewport.collidesWithRay([vectorStart, vectorEnd]);
 
 		if (collision.length > 0){// && scene.inFrontOfCamera(collision[0])){
 			ccount++;
 
-			var x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
-			var y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
-			var pixelIndex = 4 * ( canvas.width * (canvas.height - y) + x);
-			imageData.data[pixelIndex] = map[i].color.r;
-			imageData.data[pixelIndex + 1] = map[i].color.g;
-			imageData.data[pixelIndex + 2] = map[i].color.b;
+			let x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
+			let y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
+			let pixelIndex = 4 * ( canvas.width * (canvas.height - y) + x);
+			imageData.data[pixelIndex] = photon_map[i].color.r;
+			imageData.data[pixelIndex + 1] = photon_map[i].color.g;
+			imageData.data[pixelIndex + 2] = photon_map[i].color.b;
 		}
 	}
 
@@ -139,29 +118,32 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 }
 
 PhotonMapping.prototype.get_map = function(type){
-	var map = null;
+	let photon_map = null;
 	switch(type){
 		case PhotonMapEnum.GLOBAL:
-			map = this.photonMap;
+			photon_map = this.photonMap;
 			break;
 		case PhotonMapEnum.CAUSTIC:
-			map = this.causticPhotonMap;
+			photon_map = this.causticPhotonMap;
 			break;
 	}
-	return map;
+	return photon_map;
 }
 
 /*
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
 PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = PhotonMapping.PHOTON_TOLERANCE, shape = null){
-	let map = this.get_map(map_type);
-	let result = [];
-	for (let i = 0, leni = map.length; i < leni; ++i){
-		if ((map[i].shape == shape || shape == null) &&
-				map[i].position.distanceTo(position) <= tolerance){
-			result.push(map[i])
-		}
-	}
+	let photon_map = this.get_map(map_type);
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), 5);
+	let result = nearest_indexes.map(i => photon_map.photons[i]);
+	// console.log(nearest_indexes)
+
+	// for (let i = 0, leni = photon_map.length; i < leni; ++i){
+	// 	if ((photon_map[i].shape == shape || shape == null) &&
+	// 			photon_map[i].position.distanceTo(position) <= tolerance){
+	// 		result.push(photon_map[i])
+	// 	}
+	// }
 	return result;
 }

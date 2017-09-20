@@ -4124,6 +4124,14 @@ module.exports = wrappedNDArrayCtor
 module.exports = createKDTree
 module.exports.deserialize = deserializeKDTree
 
+/* HACK HACK HACK
+ *
+ * WARNING!!! MUGRE!!!
+ *
+ * if someone knows how to use broserify please enlighten me
+ */
+window.kdtree = module.exports;
+
 var ndarray = require("ndarray")
 var ndselect = require("ndarray-select")
 var pack = require("ndarray-pack")

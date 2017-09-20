@@ -181,15 +181,24 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 		return Control.scene.background_color.clone();
 	}
 }
-
+var asdasd = true;
 Shape.prototype.calculate_diffuse_reflections = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
 	photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
+
+	asdasd++;
+	photons = photons.filter(photon => {
+		return(collision.distanceTo(photon.position) < 1)
+	});
+	// if ((photons.length > 0) && asdasd) {
+	// 	asdasd = false
+	// 	console.log(photons)
+	// }
 	// then, integrate
 	power = 0;
 	for(let i = 0, leni = photons.length; i < leni; ++i) {
 		photon = photons[i];
-		power += photon.power;
+		power += photon.power*10;
 
 	}
 	return new Color(power*255, power*255, power*255);
