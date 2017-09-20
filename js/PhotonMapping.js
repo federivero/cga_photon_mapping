@@ -64,6 +64,7 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 							);
 							this.storePhoton(photon);
 						}
+						// set vector_start, vector_end, current_color for the next step
 						vector_start = collision
 						let normal = shape.calculate_normal(collision);
 						// random direction of bounce
@@ -85,6 +86,8 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
+						// aca y en el siguiente hay que usar lo mismo que en calculate_specular_color y calculate_refraction_color para hallar la direccion del bounce
+						// hay que sacar eso a una funcion afuera que pueda llamar asi es lo mismo en los dos lados
 						photonAbsorbed = true;
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
