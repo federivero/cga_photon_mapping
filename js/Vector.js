@@ -75,8 +75,12 @@ Vector.prototype = {
 	this.x = x; this.y = y; this.z = z;
 	return this;
 	},
-	distanceTo: function(b){	
-		return Math.sqrt(this.dot(b));
+	distanceTo: function(b){
+		return Math.sqrt(
+			Math.pow(this.x - b.x, 2)
+			+ Math.pow(this.y - b.y, 2)
+			+ Math.pow(this.z - b.z, 2)
+		);
 	},
 	rotate: function(axis, angle) {
 		// https://en.wikipedia.org/wiki/Rotation_matrix
@@ -186,6 +190,19 @@ Vector.fromAngles = function(theta, phi) {
 };
 Vector.randomDirection = function() {
 	return Vector.fromAngles(Math.random() * Math.PI * 2, Math.asin(Math.random() * 2 - 1));
+};
+Vector.randomDirectionCartesian = function() {
+	// alternative implementation lifted straight from the book
+	// I trust this one more than the other one
+	let x, y, z;
+	do {
+		// random number between -1 and 1
+		x = Math.random() * 2 - 1;
+		y = Math.random() * 2 - 1;
+		z = Math.random() * 2 - 1;
+		// use simple rejection sampling to find diffuse photon direction
+	} while (x*x + y*y + z*z > 1);
+	return new Vector(x, y, z);
 };
 Vector.min = function(a, b) {
 	return new Vector(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z));

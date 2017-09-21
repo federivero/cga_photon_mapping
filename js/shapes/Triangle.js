@@ -1,9 +1,21 @@
 // Inherits from Shape
 // Triangle (all points in the same plane)
-function Triangle(points, transform, diffuse_color, specular_constant, specular_color, is_mirror, transparency, refraction_coefficient) {
+function Triangle(points,
+				transform,
+				diffuse_color, diffuse_reflection_coefficient,
+				specular_color, specular_coefficient,
+				is_mirror, transparency, refraction_coefficient) {
 	this.points = points;
-	this.plane = new Plane(points, transform, diffuse_color, specular_constant, specular_color, is_mirror, transparency, refraction_coefficient);
-	Shape.call(this, transform, diffuse_color, specular_constant, specular_color, is_mirror, transparency, refraction_coefficient);
+	this.plane = new Plane(points,
+				transform,
+				diffuse_color, diffuse_reflection_coefficient,
+				specular_color, specular_coefficient,
+				is_mirror, transparency, refraction_coefficient);
+	Shape.call(this,
+				transform,
+				diffuse_color, diffuse_reflection_coefficient,
+				specular_color, specular_coefficient,
+				is_mirror, transparency, refraction_coefficient);
 }
 
 Triangle.sides = 3;

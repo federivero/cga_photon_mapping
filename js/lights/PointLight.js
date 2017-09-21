@@ -1,6 +1,6 @@
 // Inherits from Light
-function PointLight(transform, intensity, power) {
-	Light.call(this, transform, intensity, power);
+function PointLight(transform, color, power) {
+	Light.call(this, transform, color, power);
 };
 
 PointLight.prototype = Object.create(Light.prototype);
@@ -11,9 +11,9 @@ PointLight.prototype.is_shadow = function(p, shape) {
 	let segment = new Vector();
 	let direction = p.subtract(this.transform.position);
 	let distance = direction.length();
-	
+
 	var asd = false;
-	
+
 	for (let i = 0, leni = Control.scene.shapes.length; i < leni; ++i) {
 		let shape2 = Control.scene.shapes[i];
 		// skip the target shape
@@ -36,5 +36,3 @@ PointLight.prototype.is_shadow = function(p, shape) {
 	}
 	return false;
 }
-
-

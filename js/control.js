@@ -83,11 +83,11 @@ Control.parse_obj_model = function(obj_txt){
         var verts = [];
         for (var j = 0; j < 3; j++){
             var v_i = parsed_obj.i_verts[i + j]; // vertex index
-            
+
             var x = parsed_obj.c_verts[v_i];
             var y = parsed_obj.c_verts[v_i+1];
             var z = parsed_obj.c_verts[v_i+2];
-                        
+
             verts.push(new Vector(x,y,z));
         }
         var t = new Triangle(verts, null, color, 0, color, false, 0, 0);
@@ -177,9 +177,8 @@ Control.loadScene = function() {
                 new Vector(3, 3, 3)
             ),
             new Color(100, 40, 0),
-            1,
-            new Color(100,100,100),
-            false
+            0.5,
+            new Color(100, 40, 0)
         ),
         new Sphere(
             new Transform(
@@ -188,63 +187,34 @@ Control.loadScene = function() {
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40),
-            1,
-            new Color(100,100,100),
-            false
+            0.9,
+            new Color(100,100,100)
         ),
-        new Sphere(
-            new Transform(
-                new Vector(-5, -4, 40),
-                null,
-                new Vector(15, 15, 15)
-            ),
-            new Color(20, 20, 20),
-            1,
-            new Color(100,100,100),
-            true
-        ),
-        new Sphere(
-            new Transform(
-                new Vector(3, 0, -20),
-                null,
-                new Vector(10, 10, 10)
-            ),
-            new Color(20, 180, 40),
-            1,
-            new Color(100,100,100),
-            false
-        ),
-        new Sphere(
-            new Transform(
-                new Vector(1.5, 0, 10),
-                null,
-                new Vector(2, 2, 2)
-            ),
-            new Color(0, 0, 0),
-            1,
-            new Color(100,100,100),
-            false,
-            1.0,
-            1.5
-        ),
-        new Triangle(
-            [
-                new Vector(-25,0,50),
-                new Vector(20,0,50),
-                new Vector(0,25,50),
-            ],
-            new Transform(
-                new Vector(0, 0, 0),
-                null,
-                new Vector(0, 0, 0)
-            ),
-            new Color(230, 220, 35),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
-        ),
+        // new Sphere(
+        //     new Transform(
+        //         new Vector(3, 0, -20),
+        //         null,
+        //         new Vector(10, 10, 10)
+        //     ),
+        //     new Color(20, 180, 40),
+        //     0.5,
+        //     new Color(100,100,100)
+        // ),
+        // new Triangle(
+        //     [
+        //         new Vector(-25,0,50),
+        //         new Vector(20,0,50),
+        //         new Vector(0,25,50),
+        //     ],
+        //     new Transform(
+        //         new Vector(0, 0, 0),
+        //         null,
+        //         new Vector(0, 0, 0)
+        //     ),
+        //     new Color(230, 220, 35),
+        //     0,
+        //     new Color(100,100,100),
+        // ),
         new Plane(
             [
                 new Vector(-30,0,0),
@@ -256,12 +226,9 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(230, 40, 190),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
+            new Color(0, 0, 255),
+            0.9,
+            new Color(100,100,100)
         ),
         new Plane(
             [
@@ -274,12 +241,24 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(130, 40, 10),
-            0,
-            new Color(100,100,100),
-            false,
-            0,
-            0
+            new Color(255, 0, 0),
+            0.9,
+            new Color(100,100,100)
+        ),
+        new Plane(
+            [
+                new Vector(0,0,60),
+                new Vector(1,0,60),
+                new Vector(0,1,60)
+            ],
+            new Transform(
+                new Vector(0, 0, 0),
+                null,
+                new Vector(0, 0, 0)
+            ),
+            new Color(0, 255, 0),
+            0.9,
+            new Color(100,100,100)
         )
     ];*/
     let lights = [
@@ -333,7 +312,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(30000);
+		this.photonMapping = new PhotonMapping(50000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
@@ -437,7 +416,7 @@ Control.captureCanvas = function(type){
     if (imageHistory.length > 1)
         document.getElementById('btnPreviousImage').disabled = false;
 
-    //Control.upload_canvas_image_to_server(type);
+    // Control.upload_canvas_image_to_server(type);
 }
 
 Control.previousImage = function(){
@@ -491,9 +470,9 @@ Control.upload_canvas_image_to_server = function(type){
     var canvas_image = canvas.toDataURL('image/jpeg', 1.0);
     var parameters = { image_name: image_name, image_content: canvas_image};
 
-    var base_url = "http://www.randomit.com.uy/cga_photon_mapping_server";    
-    var relative_path = '/api/images'; 
-    
+    var base_url = "http://www.randomit.com.uy/cga_photon_mapping_server";
+    var relative_path = '/api/images';
+
     $.ajax({
         url: base_url + relative_path,
         type: "POST",
@@ -504,4 +483,3 @@ Control.upload_canvas_image_to_server = function(type){
     });
 
 }
-
