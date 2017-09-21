@@ -6,26 +6,28 @@ var config = null;
 
 var Control = {};
 
+Control.ready_for_input = false;
 
 Control.initialize = function(){
-    Control.eraseCanvas();
-    Control.canvasStartupMessage();
+    Control.initialize_canvas();
     Control.initializeFileUpload();
 	Control.loadScene();
 
-    K3D.load("models/fox.obj", Control.parse_obj_model);
+    //K3D.load("models/fox.obj", Control.parse_obj_model);
 
-    //this.start_photon_mapping();
+    this.start_photon_mapping();
     //Control.tests();
 }
 
 Control.start_photon_mapping = function(){
     // adjust canvas aspect ratio to match viewport's
+    this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
     Control.startPhotonMapping();
     Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
     Control.rayTrace();
     Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
+    this.ready_for_input = true;
 }
 
 Control.tests = function(){
@@ -120,12 +122,28 @@ Control.setCanvasWidthAndHeight = function(w,h){
     context.fill();
 }
 
+Control.initialize_canvas = function(){
+    this.eraseCanvas();
+    this.canvasStartupMessage();
+    this.set_canvas_input_functions();
+}
+
 Control.canvasStartupMessage = function(){
     context.font = "24px Verdana";
     context.fillStyle = "black";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Próximamente: imagen de photon mapping", canvas.width / 2, canvas.height / 2);
+}
+
+Control.set_canvas_input_functions = function(){
+    canvas.onmousedown = function(event){
+        Control.canvas_mouse_down(event);
+    }
+
+    canvas.onmouseup = function(event){
+        Control.canvas_mouse_up(event);
+    }
 }
 
 Control.getCanvasAspectRatio = function(){
@@ -169,7 +187,7 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
-	let shapes = []; /*[
+	let shapes = [
         new Sphere(
             new Transform(
                 new Vector(0, 0, 25),
@@ -260,7 +278,7 @@ Control.loadScene = function() {
             0.9,
             new Color(100,100,100)
         )
-    ];*/
+    ];
     let lights = [
         new PointLight(
             new Transform(
@@ -270,9 +288,9 @@ Control.loadScene = function() {
             100 // power
         )
     ];
-    let camera = new Vector(0,0,60)
+    let camera = new Vector(0,0,0)
     let viewport = {
-        center: new Vector(0,0,50),
+        center: new Vector(0,0,-10),
         width: 20,
         height: 10,
         getAspectRatio : function(){
@@ -312,7 +330,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(50000);
+		this.photonMapping = new PhotonMapping(20000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
@@ -483,3 +501,35 @@ Control.upload_canvas_image_to_server = function(type){
     });
 
 }
+
+
+Control.canvas_mouse_down = function(event){
+    if (this.ready_for_input){
+        var rect = canvas.getBoundingClientRect();
+        this.startMouseX = event.clientX - rect.left;
+        this.startMouseY = event.clientY - rect.top;
+    }
+}
+
+Control.canvas_mouse_up = function(event){
+    if (this.ready_for_input){
+        var rect = canvas.getBoundingClientRect();
+        this.endMouseX = event.clientX - rect.left;
+        this.endMouseY = event.clientY - rect.top;   
+
+        // move viewport and render again
+        if (this.endMouseX != this.startMouseX){
+            var dif = clamp(this.startMouseX - this.endMouseX, -COMPLETE_CIRCLE_X_SWIPE, COMPLETE_CIRCLE_X_SWIPE);
+            var rotation = dif * 2 * Math.PI / COMPLETE_CIRCLE_X_SWIPE;
+
+            var viewport = this.scene.viewport;
+            var camera_distance = viewport.center.distanceTo(this.scene.camera);
+            var current_rotation = Math.atan2(viewport.center.x, viewport.center.z);
+            viewport.center.x = camera_distance * Math.sin(rotation + current_rotation);
+            viewport.center.z = camera_distance * Math.cos(rotation + current_rotation);
+
+            this.start_photon_mapping();
+        }
+    }
+}
+
