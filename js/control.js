@@ -13,9 +13,9 @@ Control.initialize = function(){
     Control.initializeFileUpload();
 	Control.loadScene();
 
-    //K3D.load("models/fox.obj", Control.parse_obj_model);
+    K3D.load("models/fox.obj", Control.parse_obj_model);
 
-    this.start_photon_mapping();
+    //this.start_photon_mapping();
     //Control.tests();
 }
 
@@ -93,6 +93,8 @@ Control.parse_obj_model = function(obj_txt){
         var t = new Triangle(verts, null, color, 0, color, false, 0, 0);
         Control.scene.shapes.push(t);
     }
+
+    Control.start_photon_mapping();    
 }
 
 Control.eraseCanvas = function(){
@@ -167,7 +169,7 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
-	let shapes = [
+	let shapes = []; /*[
         new Sphere(
             new Transform(
                 new Vector(0, 0, 25),
@@ -279,7 +281,7 @@ Control.loadScene = function() {
             0,
             0
         )
-    ];
+    ];*/
     let lights = [
         new PointLight(
             new Transform(
@@ -289,9 +291,9 @@ Control.loadScene = function() {
             100 // power
         )
     ];
-    let camera = new Vector(0,0,0)
+    let camera = new Vector(0,0,60)
     let viewport = {
-        center: new Vector(0,0,10),
+        center: new Vector(0,0,50),
         width: 20,
         height: 10,
         getAspectRatio : function(){
