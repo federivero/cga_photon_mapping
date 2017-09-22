@@ -1,11 +1,14 @@
+// TODO: specify this in config
 const nPhong = 5
+const nearby_photon_qty = 5
+const diffuse_photon_scale_factor = 100;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
 				specular_color, specular_coefficient=0,
 				is_mirror=false, transparency=0, refraction_coefficient=0) {
-	if (diffuse_reflection_coefficient + specular_coefficient + refraction_coefficient > 1) {
-		throw new Error('diffuse_reflection_coefficient + specular_coefficient + refraction_coefficient must be less than 1!');
+	if (diffuse_reflection_coefficient + specular_coefficient + transparency > 1) {
+		throw new Error('diffuse_reflection_coefficient + specular_coefficient + transparency must be less than 1!');
 	}
 
 	this.transform = transform;
@@ -44,7 +47,7 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	// return this.calculate_diffuse_reflections(collision, v1, v2, depth-1, refraction_coefficient);
 	// Calculate light color
 	let light_component = this.calculate_light_color(collision, v1, v2);
-	let specular_component, refraction_component;
+	let specular_component, refraction_component, diffuse_reflection_component, caustic_component;
 	if (depth > 0) {
 		// is_mirror distinguishes between a reflective surface and one that is merely shiny
 		if ((this.specular_coefficient > 0) && (this.is_mirror === true)) {
@@ -62,34 +65,83 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			refraction_component = new Color();
 		}
 	}
-	let global_map_color = this.calculate_global_map_component(collision, v1, v2);
+	if (!this.is_mirror) {
+		diffuse_reflection_component = this.calculate_diffuse_photons_color(collision, v1, v2);
+	} else {
+		diffuse_reflection_component = new Color();
+	}
+	// this is for seeing only the reflection component
+	// return new Color(
+	// 	(
+	// 		diffuse_reflection_component.r * diffuse_photon_scale_factor
+	// 	),
+	// 	(
+	// 		diffuse_reflection_component.g * diffuse_photon_scale_factor
+	// 	),
+	// 	(
+	// 		diffuse_reflection_component.b * diffuse_photon_scale_factor
+	// 	)
+	// );
 	return new Color(
 		(
-			light_component.r
+			this.diffuse_reflection_coefficient * light_component.r
 			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
-			+ global_map_color.r
+			// + diffuse_reflection_component.r * diffuse_photon_scale_factor
 		),
 		(
-			light_component.g
+			this.diffuse_reflection_coefficient * light_component.g
 			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
-			+ global_map_color.g
+			// + diffuse_reflection_component.g * diffuse_photon_scale_factor
 		),
 		(
-			light_component.b
+			this.diffuse_reflection_coefficient * light_component.b
 			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
-			+ global_map_color.b
+			// + diffuse_reflection_component.b * diffuse_photon_scale_factor
 		)
 	);
 };
 
 // Calculate the color of a diffuse reflected photon
-Shape.prototype.calculate_diffuse_photon_color = function(incoming_color) {
-	// TODO: do this proper
-	return this.diffuse_color.clone();
+// If ret is provided then it is used for the return result
+Shape.prototype.calculate_diffuse_photon_color = function(incoming_color, ret=null) {
+	if (ret === null) {
+		ret = new Color();
+	}
+	// Actually, divide both by 255 (to get a number between 0 and 1)
+	// And then multiply by 255 (to get a color)
+	ret.r = (this.diffuse_color.r) * (incoming_color.r / 255) / this.diffuse_reflection_coefficient;
+	ret.g = (this.diffuse_color.g) * (incoming_color.g / 255) / this.diffuse_reflection_coefficient;
+	ret.b = (this.diffuse_color.b) * (incoming_color.b / 255) / this.diffuse_reflection_coefficient;
+	return ret;
 };
+
+// Calculate de direction of a photon bounce (always will be a random hemisphere direction)
+// if ret is provided then it is used for the return result
+Shape.prototype.diffuse_reflection_direction = function(collision, ret=null) {
+	if (ret == null) {
+		ret = new Vector();
+	}
+	let normal = this.calculate_normal(collision);
+	// random direction of bounce
+	let x, y, z;
+	do {
+		do {
+			// random number between -1 and 1
+			x = Math.random() * 2 - 1;
+			y = Math.random() * 2 - 1;
+			z = Math.random() * 2 - 1;
+			// use simple rejection sampling to find diffuse photon direction
+		} while (x*x + y*y + z*z > 1);
+		ret.x = x;
+		ret.y = y;
+		ret.z = z;
+	} while (ret.dot(normal) < 0);
+	Vector.add(collision, ret, ret);
+	return ret;
+}
 
 // Calculate the color in 'collision' from the lights
 Shape.prototype.calculate_light_color = function(collision, v1, v2) {
@@ -119,16 +171,27 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 	return ret_color;
 }
 
-// Calculate the reflection component of the color in 'collision'
-Shape.prototype.calculate_specular_color = function(collision, v1, v2, depth, refraction_coefficient) {
+// Calculate de direction of a specular reflection
+// if reflection_direction is provided then it is used for the return result
+Shape.prototype.specular_reflection_direction = function(collision, v1, refraction_coefficient, reflection_direction=null) {
+	if (reflection_direction == null) {
+		reflection_direction = new Vector();
+	}
 	let normal = this.calculate_normal(collision);
 	if (this.refraction_coefficient == refraction_coefficient) {
-		normal = Vector.negative(normal, normal);
+		Vector.negative(normal, normal);
 	}
-	let source_direction = v1.subtract(collision);
+	let source_direction = reflection_direction;
+	Vector.subtract(v1, collision, source_direction);
 	Vector.unit(source_direction, source_direction);
 	// Simetrizar source_direction respecto a la normal
-	let reflection_direction = normal.multiply(2 * (normal.dot(source_direction)));
+	Vector.multiply(normal, 2*(normal.dot(source_direction)), reflection_direction)
+	return reflection_direction;
+}
+
+// Calculate the reflection component of the color in 'collision'
+Shape.prototype.calculate_specular_color = function(collision, v1, v2, depth, refraction_coefficient) {
+	let reflection_direction = this.specular_reflection_direction(collision, v1, refraction_coefficient);
 	// Un punto en la direccion de reflection_direction
 	let reflection_v2 = reflection_direction.add(collision);
 
@@ -145,10 +208,12 @@ Shape.prototype.calculate_specular_color = function(collision, v1, v2, depth, re
 	}
 }
 
-// Calculate the refraction component of the color in 'collision'
-// limitation: there can't be a transparent thing inside of another one
-// to solve this refraction_coefficient should be a stack
-Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, refraction_coefficient) {
+// Calculate de direction of a transmission
+// if ret is provided then it is used for the return result
+Shape.prototype.refraction_direction = function(collision, v1, refraction_coefficient, exit_vector=null) {
+	if (exit_vector == null) {
+		exit_vector = new Vector();
+	}
 	//para calcular el vector de salida:
 	//		-transformo el vector de incidencia en uno que sale del punto colision (direccionFuente)
 	//		-calculo el cross product entre direccionFuente y la normal para hallar el vector perpendicular
@@ -156,9 +221,11 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 	//		-calculo el angulo de salida usando los materiales
 	//		-roto usando la matriz de rotacion respecto a ese angulo y el eje es el del cross product
 	//		-si todo sale bien me sale un vector para el lado correcto
+
+	// TODO: there are a lot of allocations here that could be avoided
 	let normal = this.calculate_normal(collision);
 	if (this.refraction_coefficient == refraction_coefficient) {
-		normal = Vector.negative(normal, normal);
+		Vector.negative(normal, normal);
 	}
 	let source_direction = v1.subtract(collision);
 	Vector.unit(source_direction, source_direction);
@@ -179,11 +246,28 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 	let critical_angle = Math.asin(opposite_refraction_coefficient / refraction_coefficient);
 	if (entry_angle >= critical_angle) {
 		// TODO: is this right??
-		return new Color();
-	}
-	let exit_angle = Math.asin( (Math.sin(entry_angle) * (refraction_coefficient / opposite_refraction_coefficient)) );
+		exit_vector = this.specular_reflection_direction(collision, v1, refraction_coefficient, exit_vector);
+		opposite_refraction_coefficient = refraction_coefficient;
+	} else {
+		let exit_angle = Math.asin( (Math.sin(entry_angle) * (refraction_coefficient / opposite_refraction_coefficient)) );
 
-	let exit_vector = normal.negative().rotate(axis, exit_angle);
+		Vector.negative(normal, normal);
+		Vector.rotate(normal, axis, exit_angle, exit_vector);
+	}
+	return {
+		exit_vector: exit_vector,
+		opposite_refraction_coefficient: opposite_refraction_coefficient
+	};
+
+}
+
+// Calculate the refraction component of the color in 'collision'
+// limitation: there can't be a transparent thing inside of another one
+// to solve this refraction_coefficient should be a stack
+Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, refraction_coefficient) {
+	let refraction_result = this.refraction_direction(collision, v1, refraction_coefficient);
+	let exit_vector = refraction_result.exit_vector;
+	let opposite_refraction_coefficient = refraction_result.opposite_refraction_coefficient;
 	// don't collide with the exit surface
 	let collision_no_error = exit_vector.multiply(0.0001);
 	Vector.add(collision, collision_no_error, collision_no_error);
@@ -201,34 +285,20 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 	}
 }
 
-Shape.prototype.calculate_diffuse_reflections = function(collision, v1, v2, depth, refraction_coefficient) {
+Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
-	photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
-
-	photons = photons.filter(photon => {
-		return (collision.distanceTo(photon.position) < 1)
-	});
-
+	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, nearby_photon_qty, null);
 	// then, integrate
-	power = 0;
-	for(let i = 0, leni = photons.length; i < leni; ++i) {
-		photon = photons[i];
-		power += photon.power*10;
-
-	}
-	return new Color(power*255, power*255, power*255);
-}
-
-
-Shape.prototype.calculate_global_map_component = function(collision, v1, v2){
-	var photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
-
-	var c = new Color(0,0,0);
-	for (var i = 0; i < photons.length; i++){
-		var photon = photons[i];
-		c.r += photon.color.r * photon.power;
-		c.g += photon.color.g * photon.power;
-		c.b += photon.color.b * photon.power;
+	let c = new Color();
+	let photon_color = new Color();
+	for (let i = 0, leni = photons.length; i < leni; ++i){
+		let photon = photons[i];
+		// TODO: maybe save the calculated color instead of the entry color?
+		// do we use the entry color at all?
+		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
+		c.r += photon_color.r * photon.power;
+		c.g += photon_color.g * photon.power;
+		c.b += photon_color.b * photon.power;
 	}
 	c.r = Math.min(c.r, 255);
 	c.g = Math.min(c.g, 255);
@@ -236,7 +306,7 @@ Shape.prototype.calculate_global_map_component = function(collision, v1, v2){
 	return c;
 }
 
-Shape.prototype.calculate_caustics_map_component = function(collision, v1, v2){
-		
-}
 
+Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2){
+
+}
