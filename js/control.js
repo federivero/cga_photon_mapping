@@ -11,12 +11,31 @@ Control.ready_for_input = false;
 Control.initialize = function(){
     Control.initialize_canvas();
     Control.initializeFileUpload();
-	Control.loadScene();
 
-    //K3D.load("models/fox.obj", Control.parse_obj_model);
+    var config_loaded = function(){
+        Control.loadScene();
+        Control.start_photon_mapping();
+    }
 
-    this.start_photon_mapping();
+    Control.load_default_configuration(config_loaded);
+
     //Control.tests();
+}
+
+Control.load_default_configuration = function(config_loaded){
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                Control.parse_config(xhr.responseText);
+                config_loaded();
+            } else {
+
+            }
+        }
+    };
+    xhr.open("GET", "config.json", true);
+    xhr.send();
 }
 
 Control.start_photon_mapping = function(){
@@ -71,10 +90,28 @@ Control.clickLnkCargarArchivo = function(){
 
 Control.parse_config = function(txtConfig){
 	var jsonConfig = JSON.parse(txtConfig);
+	this.config = jsonConfig;
 
-    // todo: handle error in json
+    // set default values
+    this.config.config = this.config.config || {};
+    this.config.config.resolution = this.config.config.resolution || {};
+    
+    this.config.scene = this.config.scene || {};
+    this.config.scene.models = this.config.scene.models || [];
+    this.config.scene.shapes = this.config.scene.shapes || [];
+    this.config.scene.camera = this.config.scene.camera || {};
+    this.config.scene.camera.x = this.config.scene.camera.x || 0;
+    this.config.scene.camera.y = this.config.scene.camera.y || 0;
+    this.config.scene.camera.z = this.config.scene.camera.z || 0;
+    this.config.scene.viewport = this.config.scene.viewport || {};
+    this.config.scene.viewport.center = this.config.scene.viewport.center || {};
+    this.config.scene.viewport.center.x = this.config.scene.viewport.center.x || 0;
+    this.config.scene.viewport.center.y = this.config.scene.viewport.center.y || 0;
+    this.config.scene.viewport.center.z = this.config.scene.viewport.center.z || 10;
+    this.config.scene.viewport.width = this.config.scene.viewport.width || 20;
+    this.config.scene.viewport.height = this.config.scene.viewport.height || 10;
 
-	config = jsonConfig;
+    this.config.scene.lights = this.config.scene.lights || [];
 }
 
 Control.parse_obj_model = function(obj_txt){
@@ -244,7 +281,7 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(0, 0, 255),
+            new Color(0, 0, 150),
             0.9,
             new Color(100,100,100)
         ),
@@ -259,7 +296,7 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(255, 0, 0),
+            new Color(150, 0, 0),
             0.9,
             new Color(100,100,100)
         ),
@@ -274,25 +311,17 @@ Control.loadScene = function() {
                 null,
                 new Vector(0, 0, 0)
             ),
-            new Color(0, 255, 0),
+            new Color(150, 150, 150),
             0.9,
             new Color(100,100,100)
         )
     ];
-    let lights = [
-        new PointLight(
-            new Transform(
-                new Vector(10, 8, 10), null, null
-            ),
-            new Color(255, 255, 255),
-            100 // power
-        )
-    ];
-    let camera = new Vector(0,0,0)
+    let lights = Control.parse_lights_from_config();
+    let camera = new Vector(this.config.scene.camera.x, this.config.scene.camera.x, this.config.scene.camera.x);
     let viewport = {
-        center: new Vector(0,0,-10),
-        width: 20,
-        height: 10,
+        center: new Vector(this.config.scene.viewport.center.x, this.config.scene.viewport.center.y, this.config.scene.viewport.center.z),
+        width: this.config.scene.viewport.width,
+        height: this.config.scene.viewport.height,
         getAspectRatio : function(){
             return this.width / this.height;
         },
@@ -330,7 +359,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(20000);
+		this.photonMapping = new PhotonMapping(1000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
@@ -533,3 +562,47 @@ Control.canvas_mouse_up = function(event){
     }
 }
 
+
+Control.parse_lights_from_config = function(){
+    let lights = [];
+
+    for (var i = 0; i < this.config.scene.lights.length; i++){
+        var config_light = this.config.scene.lights[i];
+        var l;
+        switch (config_light.type){
+            case "point": 
+                l = new PointLight(
+                    new Transform(
+                        new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
+                    ),
+                    new Color(config_light.color.r, config_light.color.g, config_light.color.b),
+                    config_light.power // power
+                );
+                break;            
+        }
+        lights.push(l);
+    }
+    return lights;
+}
+
+Control.parse_shapes_from_config = function(){
+    let shapes = [];
+
+    for (var i = 0; i < this.config.scene.shapes.length; i++){
+        var config_shape = this.config.scene.shapes[i];
+        var l;
+        switch (config_shape.type){
+            case "point": 
+                l = new PointLight(
+                    new Transform(
+                        new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
+                    ),
+                    new Color(config_light.color.r, config_light.color.g, config_light.color.b),
+                    config_light.power // power
+                );
+                break;            
+        }
+        lights.push(l);
+    }
+    return lights;
+}

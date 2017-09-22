@@ -19,7 +19,9 @@ PhotonMapping = function(photonCount){
 }
 
 PhotonMapping.PHOTON_TOLERANCE = 1;
-PhotonMapping.MAX_PHOTON_BOUNCE = 4
+PhotonMapping.MAX_PHOTON_BOUNCE = 4;
+PhotonMapping.PHOTON_PROPORTION = 0.001;
+
 
 PhotonMapping.prototype.generatePhotons = function(scene){
 
@@ -186,7 +188,7 @@ PhotonMapping.prototype.get_map = function(type){
 */
 PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = PhotonMapping.PHOTON_TOLERANCE, shape = null){
 	let photon_map = this.get_map(map_type);
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), 5);
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length));
 	let result = nearest_indexes.map(i => photon_map.photons[i]);
 	// console.log(nearest_indexes)
 

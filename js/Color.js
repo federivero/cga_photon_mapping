@@ -15,3 +15,9 @@ Color.prototype.clone = function() {
 		this.b
 	);
 }
+
+Color.prototype.add = function(color){
+	this.r += Math.min(color.r, 255);
+	this.g += Math.min(color.g, 255);
+	this.b += Math.min(color.b, 255);
+}

@@ -1,12 +1,30 @@
 {
-	"configuracion" : {
-		"resolucion" : {
+	"config" : {
+		"resolution" : {
 			"x" : 1200,
 			"y" : 500
 		}
 	},
 	"scene" : {
-		"modelos" : [ "models/file1.obj"],
-		"shapes" : []
+		"models" : [ "models/file1.obj"],
+		"shapes" : [
+			{ "type" : "plane", 
+			  "diffuse_color" : { "r" : 255, "g" : 255, "b": 255},
+			   "points" : [
+					{"x" : 0, "y" : 0, "z" : 0},
+					{"x" : 0, "y" : 0, "z" : 0},
+					{"x" : 0, "y" : 0, "z" : 0}
+				]
+			}
+		],
+		"lights" : [
+			{ "type" : "point", "position" : {"x" : 10, "y" : 8, "z" : 10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100}
+		],
+		"camera" : {"x" : 0, "y" : 0, "z" : 0},
+		"viewport": { 
+			"center" : {"x" : 0, "y" : 0, "z" : 10}, 
+			"width" : 20, 
+			"height" : 10
+		}
 	}
 }

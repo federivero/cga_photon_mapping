@@ -62,21 +62,25 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			refraction_component = new Color();
 		}
 	}
+	let global_map_color = this.calculate_global_map_component(collision, v1, v2);
 	return new Color(
 		(
 			light_component.r
 			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
+			+ global_map_color.r
 		),
 		(
 			light_component.g
 			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
+			+ global_map_color.g
 		),
 		(
 			light_component.b
 			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
+			+ global_map_color.b
 		)
 	);
 };
@@ -196,19 +200,15 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 		return Control.scene.background_color.clone();
 	}
 }
-var asdasd = true;
+
 Shape.prototype.calculate_diffuse_reflections = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
 	photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
 
-	asdasd++;
 	photons = photons.filter(photon => {
-		return(collision.distanceTo(photon.position) < 1)
+		return (collision.distanceTo(photon.position) < 1)
 	});
-	// if ((photons.length > 0) && asdasd) {
-	// 	asdasd = false
-	// 	console.log(photons)
-	// }
+
 	// then, integrate
 	power = 0;
 	for(let i = 0, leni = photons.length; i < leni; ++i) {
@@ -218,3 +218,25 @@ Shape.prototype.calculate_diffuse_reflections = function(collision, v1, v2, dept
 	}
 	return new Color(power*255, power*255, power*255);
 }
+
+
+Shape.prototype.calculate_global_map_component = function(collision, v1, v2){
+	var photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, 1, null);
+
+	var c = new Color(0,0,0);
+	for (var i = 0; i < photons.length; i++){
+		var photon = photons[i];
+		c.r += photon.color.r * photon.power;
+		c.g += photon.color.g * photon.power;
+		c.b += photon.color.b * photon.power;
+	}
+	c.r = Math.min(c.r, 255);
+	c.g = Math.min(c.g, 255);
+	c.b = Math.min(c.b, 255);
+	return c;
+}
+
+Shape.prototype.calculate_caustics_map_component = function(collision, v1, v2){
+		
+}
+
