@@ -62,25 +62,25 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			refraction_component = new Color();
 		}
 	}
-	let global_map_color = this.calculate_global_map_component(collision, v1, v2);
+	//let global_map_color = this.calculate_global_map_component(collision, v1, v2);
 	return new Color(
 		(
 			light_component.r
 			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
-			+ global_map_color.r
+	//		+ global_map_color.r
 		),
 		(
 			light_component.g
 			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
-			+ global_map_color.g
+	//		+ global_map_color.g
 		),
 		(
 			light_component.b
 			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
-			+ global_map_color.b
+	//		+ global_map_color.b
 		)
 	);
 };

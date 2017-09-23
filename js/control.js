@@ -224,6 +224,7 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
+    /*
 	let shapes = [
         new Sphere(
             new Transform(
@@ -316,7 +317,9 @@ Control.loadScene = function() {
             new Color(100,100,100)
         )
     ];
+    */
     let lights = Control.parse_lights_from_config();
+    let shapes = Control.parse_shapes_from_config();
     let camera = new Vector(this.config.scene.camera.x, this.config.scene.camera.x, this.config.scene.camera.x);
     let viewport = {
         center: new Vector(this.config.scene.viewport.center.x, this.config.scene.viewport.center.y, this.config.scene.viewport.center.z),
@@ -359,7 +362,7 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(1000);
+		this.photonMapping = new PhotonMapping(3000);
         this.photonMapping.generatePhotons(this.scene);
 
         this.generatePhotonImage();
@@ -590,19 +593,47 @@ Control.parse_shapes_from_config = function(){
 
     for (var i = 0; i < this.config.scene.shapes.length; i++){
         var config_shape = this.config.scene.shapes[i];
-        var l;
+        var s;
         switch (config_shape.type){
-            case "point": 
-                l = new PointLight(
+            case "plane": 
+                s = new Plane(
+                    [
+                        new Vector(config_shape.points[0].x, config_shape.points[0].y, config_shape.points[0].z),
+                        new Vector(config_shape.points[1].x, config_shape.points[1].y, config_shape.points[1].z),
+                        new Vector(config_shape.points[2].x, config_shape.points[2].y, config_shape.points[2].z),
+                    ],
                     new Transform(
-                        new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
+                        new Vector(0, 0, 0),
+                        null,
+                        new Vector(0, 0, 0)
                     ),
-                    new Color(config_light.color.r, config_light.color.g, config_light.color.b),
-                    config_light.power // power
+                    new Color(config_shape.diffuse_color.r, config_shape.diffuse_color.g, config_shape.diffuse_color.b),
+                    config_shape.diffuse_reflection_coefficient,
+                    new Color(config_shape.specular_color.r,config_shape.specular_color.g,config_shape.specular_color.b),
+                    config_shape.specular_coefficient || 0,
+                    config_shape.is_mirror || false,
+                    config_shape.transparency || 0,
+                    config_shape.refraction_coefficient || 0
                 );
-                break;            
+                break;      
+            case "sphere":
+                s = new Sphere(
+                    new Transform(
+                        new Vector(config_shape.center.x, config_shape.center.y, config_shape.center.z),
+                        null,
+                        new Vector(config_shape.radius, config_shape.radius, config_shape.radius)
+                    ),
+                    new Color(config_shape.diffuse_color.r, config_shape.diffuse_color.g, config_shape.diffuse_color.b),
+                    config_shape.diffuse_reflection_coefficient,
+                    new Color(config_shape.specular_color.r,config_shape.specular_color.g,config_shape.specular_color.b),
+                    config_shape.specular_coefficient || 0,
+                    config_shape.is_mirror || false,
+                    config_shape.transparency || 0,
+                    config_shape.refraction_coefficient || 0
+                )
+                break;      
         }
-        lights.push(l);
+        shapes.push(s);
     }
-    return lights;
+    return shapes;
 }
