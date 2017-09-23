@@ -2,8 +2,6 @@
 var canvas = document.getElementById('photonMappingBox');
 var context = canvas.getContext('2d');
 
-var config = null;
-
 var Control = {};
 
 Control.ready_for_input = false;
@@ -93,9 +91,9 @@ Control.parse_config = function(txtConfig){
 	this.config = jsonConfig;
 
     // set default values
-    this.config.config = this.config.config || {};
-    this.config.config.resolution = this.config.config.resolution || {};
-    
+    this.config.resolution = this.config.resolution || {};
+    this.config.photon_count = this.config.photon_count || 10000;
+
     this.config.scene = this.config.scene || {};
     this.config.scene.models = this.config.scene.models || [];
     this.config.scene.shapes = this.config.scene.shapes || [];
@@ -133,7 +131,7 @@ Control.parse_obj_model = function(obj_txt){
         Control.scene.shapes.push(t);
     }
 
-    Control.start_photon_mapping();    
+    Control.start_photon_mapping();
 }
 
 Control.eraseCanvas = function(){
@@ -362,9 +360,10 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(3000);
+		this.photonMapping = new PhotonMapping(this.config.photon_count);
         this.photonMapping.generatePhotons(this.scene);
 
+        console.log('finished generating photons!')
         this.generatePhotonImage();
 	}
 }
@@ -443,8 +442,8 @@ Control.controlarPrecondiciones = function(){
 
 Control.downloadCanvas = function(){
     var downloadLink = document.getElementById('downloadCanvasLink');
-    var canvasImage = canvas.toDataURL('image/jpeg', 1.0);
-    downloadLink.setAttribute('download', "canvasImage.jpg");
+    var canvasImage = canvas.toDataURL('image/png', 1.0);
+    downloadLink.setAttribute('download', "canvasImage.png");
     downloadLink.href = canvasImage;
     downloadLink.click();
 }
@@ -547,7 +546,7 @@ Control.canvas_mouse_up = function(event){
     if (this.ready_for_input){
         var rect = canvas.getBoundingClientRect();
         this.endMouseX = event.clientX - rect.left;
-        this.endMouseY = event.clientY - rect.top;   
+        this.endMouseY = event.clientY - rect.top;
 
         // move viewport and render again
         if (this.endMouseX != this.startMouseX){
@@ -573,15 +572,15 @@ Control.parse_lights_from_config = function(){
         var config_light = this.config.scene.lights[i];
         var l;
         switch (config_light.type){
-            case "point": 
+            case "point":
                 l = new PointLight(
                     new Transform(
                         new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
                     ),
                     new Color(config_light.color.r, config_light.color.g, config_light.color.b),
-                    config_light.power // power
+                    config_light.power 
                 );
-                break;            
+                break;
         }
         lights.push(l);
     }
@@ -631,7 +630,7 @@ Control.parse_shapes_from_config = function(){
                     config_shape.transparency || 0,
                     config_shape.refraction_coefficient || 0
                 )
-                break;      
+                break;
         }
         shapes.push(s);
     }

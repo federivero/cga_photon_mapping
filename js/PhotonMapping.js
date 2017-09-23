@@ -18,9 +18,8 @@ PhotonMapping = function(photonCount){
 	};
 }
 
-PhotonMapping.PHOTON_TOLERANCE = 1;
 PhotonMapping.MAX_PHOTON_BOUNCE = 4;
-PhotonMapping.PHOTON_PROPORTION = 0.001;
+PhotonMapping.PHOTON_PROPORTION = 0.002;
 
 
 PhotonMapping.prototype.generatePhotons = function(scene){
@@ -68,31 +67,16 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 						}
 						// set vector_start, vector_end, current_color for the next step
 						vector_start = collision
-						let normal = shape.calculate_normal(collision);
-						// random direction of bounce
-						let x, y, z;
-						do {
-							do {
-								// random number between -1 and 1
-								x = Math.random() * 2 - 1;
-								y = Math.random() * 2 - 1;
-								z = Math.random() * 2 - 1;
-								// use simple rejection sampling to find diffuse photon direction
-							} while (x*x + y*y + z*z > 1);
-							vector_end.x = x;
-							vector_end.y = y;
-							vector_end.z = z;
-						} while (vector_end.dot(normal) < 0);
-						Vector.add(collision, vector_end, vector_end);
+						vector_end = shape.diffuse_reflection_direction(collision, vector_end);
 						current_color = shape.calculate_diffuse_photon_color(current_color);
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
-						// aca y en el siguiente hay que usar lo mismo que en calculate_specular_color y calculate_refraction_color para hallar la direccion del bounce
-						// hay que sacar eso a una funcion afuera que pueda llamar asi es lo mismo en los dos lados
+						// use specular_reflection_direction
 						photonAbsorbed = true;
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
+						// use refraction_direction
 						photonAbsorbed = true;
 					} else {
 						// absorption
@@ -186,17 +170,11 @@ PhotonMapping.prototype.get_map = function(type){
 /*
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
-PhotonMapping.prototype.get_photons = function(map_type, position, tolerance = PhotonMapping.PHOTON_TOLERANCE, shape = null){
+PhotonMapping.prototype.get_photons = function(map_type, position, quantity, shape=null){
 	let photon_map = this.get_map(map_type);
+	// photons as a proportion
 	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length));
-	let result = nearest_indexes.map(i => photon_map.photons[i]);
-	// console.log(nearest_indexes)
-
-	// for (let i = 0, leni = photon_map.length; i < leni; ++i){
-	// 	if ((photon_map[i].shape == shape || shape == null) &&
-	// 			photon_map[i].position.distanceTo(position) <= tolerance){
-	// 		result.push(photon_map[i])
-	// 	}
-	// }
-	return result;
+	// photons as quantity
+	//let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);
+	return nearest_indexes.map(i => photon_map.photons[i]);
 }
