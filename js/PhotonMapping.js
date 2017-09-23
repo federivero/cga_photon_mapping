@@ -173,8 +173,13 @@ PhotonMapping.prototype.get_map = function(type){
 PhotonMapping.prototype.get_photons = function(map_type, position, quantity, shape=null){
 	let photon_map = this.get_map(map_type);
 	// photons as a proportion
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length));
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
 	// photons as quantity
 	//let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);
-	return nearest_indexes.map(i => photon_map.photons[i]);
+	return nearest_indexes.filter(i => (shape == null) || (photon_map.photons[i].shape == shape)).map(i => photon_map.photons[i]);
+}
+
+PhotonMapping.prototype.photon_count_per_point = function(map_type){
+	let photon_map = this.get_map(map_type);
+	return Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length);
 }

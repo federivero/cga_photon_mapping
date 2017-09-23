@@ -1,7 +1,7 @@
 // TODO: specify this in config
 const nPhong = 5;
 const nearby_photon_qty = 5;
-const diffuse_photon_scale_factor = 1;
+const diffuse_photon_scale_factor = 2;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
@@ -288,18 +288,21 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 
 Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
-	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, nearby_photon_qty, null);
+	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, nearby_photon_qty, this);
 	// then, integrate
 	let c = new Color();
 	let photon_color = new Color();
+
+	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.GLOBAL) / photons.length;
+
 	for (let i = 0, leni = photons.length; i < leni; ++i){
 		let photon = photons[i];
 		// TODO: maybe save the calculated color instead of the entry color?
 		// do we use the entry color at all?
 		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
-		c.r += photon_color.r * photon.power;
-		c.g += photon_color.g * photon.power;
-		c.b += photon_color.b * photon.power;
+		c.r += photon_color.r * photon.power * power_compensation;
+		c.g += photon_color.g * photon.power * power_compensation;
+		c.b += photon_color.b * photon.power * power_compensation;
 	}
 	c.r = Math.min(c.r, 255);
 	c.g = Math.min(c.g, 255);
