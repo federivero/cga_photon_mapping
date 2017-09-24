@@ -88,19 +88,19 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			this.diffuse_reflection_coefficient * light_component.r
 			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
-			+ diffuse_reflection_component.r * diffuse_photon_scale_factor
+		//	+ diffuse_reflection_component.r * diffuse_photon_scale_factor
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.g
 			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
-			+ diffuse_reflection_component.g * diffuse_photon_scale_factor
+		//	+ diffuse_reflection_component.g * diffuse_photon_scale_factor
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.b
 			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
-			+ diffuse_reflection_component.b * diffuse_photon_scale_factor
+		//	+ diffuse_reflection_component.b * diffuse_photon_scale_factor
 		)
 	);
 };
@@ -154,10 +154,12 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 		light_direction = Vector.subtract(light.transform.position, collision, light_direction);
 		// if the current light is on the visible side
 		// and the point isn't shadowed by another one
-		if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
+		//if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
+		//if (!light.is_shadow(collision, this)){
 			// Angle factor
 			light_direction = Vector.unit(light_direction, light_direction);
 			let dif_factor = light_direction.dot(normal);
+			dif_factor = 1;
 			// Specular highlights
 			// esto esta levantado directo de unas diapositivas
 			let vect_V = v1.subtract(collision).unit();
@@ -167,7 +169,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			ret_color.r += Math.max(0, dif_factor * this.diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
 			ret_color.g += Math.max(0, dif_factor * this.diffuse_color.g + spec_RVnK_factor * this.specular_color.g);
 			ret_color.b += Math.max(0, dif_factor * this.diffuse_color.b + spec_RVnK_factor * this.specular_color.b);
-		}
+		//}
 	}
 	return ret_color;
 }

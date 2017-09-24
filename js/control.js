@@ -129,21 +129,27 @@ Control.parse_obj_model = function(obj_txt){
     var color = new Color(200,0,0);
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
         var verts = [];
+        var normals = [];
         for (var j = 0; j < 3; j++){
-            var v_i = parsed_obj.i_verts[i + j]; // vertex index
+            var v_i = parsed_obj.i_verts[i + j] * 3; // vertex index
+           // var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
 
-            var x = parsed_obj.c_verts[v_i];
-            var y = parsed_obj.c_verts[v_i+1];
-            var z = parsed_obj.c_verts[v_i+2];
+            var x = parsed_obj.c_verts[v_i] * 0.1;
+            var y = parsed_obj.c_verts[v_i+1] * 0.1;
+            var z = parsed_obj.c_verts[v_i+2] * 0.1 ;
 
             verts.push(new Vector(x,y,z));
+
+           // x = parsed_obj.c_norms[n_i];
+           // y = parsed_obj.c_norms[n_i+1];
+          //  z = parsed_obj.c_norms[n_i+2];
+
+          //  normals.push(new Vector(x,y,z));
         }
         var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
-        Control.model_shapes.push(t);
+        //t.plane.normal = normals[0].multiply(-1);
 
-        if (Control.model_shapes.length > 100){
-            break;
-        }
+        Control.model_shapes.push(t);
     }
 
     Control.loaded_models++;
