@@ -1,19 +1,4 @@
-{
-	"resolution" : {
-		"x" : 1200,
-		"y" : 500
-	},
-	"photon_count" : 5000,
-	"photon_max_bounce" : 4,
-	"photon_mapping" : {
-		"nearby_photons_per_point_type"  : "fixed",
-		"nearby_photons_per_point_count" : 10,
-		"nearby_photons_per_point_proportion" : 0.0001,
-		"diffuse_photon_scale_factor" : 10
-	},
-	"scene" : {
-		"models" : [],
-		"shapes" : [{ 	"type" : "plane", 
+{ 	"type" : "plane", 
 				"points" : [
 			  		{"x" : -30, "y" : 0, "z" : 0},
 					{"x" : -30, "y" : 1, "z" : 0},
@@ -66,15 +51,3 @@
 				"transparency" : 0, 
 				"refraction_coefficient" : 0
 			}
-		],
-		"lights" : [
-			{ "type" : "point", "position" : {"x" : 10, "y" : 5, "z" : 12}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 200}
-		],
-		"camera" : {"x" : 0, "y" : 0, "z" : 0},
-		"viewport": { 
-			"center" : {"x" : 0, "y" : 0, "z" : 10}, 
-			"width" : 20, 
-			"height" : 10
-		}
-	}
-}
