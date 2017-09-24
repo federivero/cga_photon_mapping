@@ -52,22 +52,11 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 				// TODO: currently the trace_result is calculated again at the start of the loop, maybe fix this?
 				// let x = 0;
 				while (true) {
-					// ++x;
-					// if (x % 1000 == 0) {
-					// 	console.log(x);
-					// 	// console.log(trace_result)
-					// 	if (trace_result.nearest_shape.class_name === 'Plane'){
-					// 		console.log(trace_result)
-					// 	}
-					// 	if (x == 1000000) {
-					// 		return
-					// 	}
-					// }
 					trace_result = scene.trace(vector_start, vector_end);
 					if (trace_result.found && (trace_result.nearest_shape.specular_coefficient > 0 || trace_result.nearest_shape.transparency > 0)) {
 						break;
 					}
-					vector_end = Vector.randomDirection(vector_end);
+					vector_end = Vector.randomDirectionCartesian(vector_end);
 					Vector.add(vector_start, vector_end, vector_end);
 				}
 			}
@@ -103,7 +92,8 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 						if (map_type === PhotonMapEnum.GLOBAL) {
 							photonAbsorbed = true;
 						} else if (map_type === PhotonMapEnum.CAUSTIC) {
-							vector_end = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
+							let reflection_direction = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
+							Vector.add(collision, reflection_direction, vector_end);
 							vector_start = collision;
 							// TODO: allow for colored mirrors
 							current_color = current_color;
@@ -114,9 +104,18 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 							photonAbsorbed = true;
 						} else if (map_type == PhotonMapEnum.CAUSTIC) {
 							let refraction_result =  shape.refraction_direction(collision, vector_start, refraction_coefficient, vector_end);
-							vector_end = refraction_result.exit_vector;
 							refraction_coefficient = refraction_result.opposite_refraction_coefficient;
-							vector_start = collision;
+							// same as in calculate_refraction_color
+							// I know it's a mess, sorry
+
+							// don't collide with the exit surface
+							let collision_no_error = Vector.multiply(collision, 0.0001, vector_start);
+							Vector.add(collision, collision_no_error, collision_no_error);
+							vector_end = refraction_result.exit_vector;
+							Vector.add(vector_end, collision_no_error, vector_end)
+							vector_start = collision_no_error;
+							// shape to ignore is null so it can collide with itself
+							shape = null;
 							// TODO: allow for colored glass
 							current_color = current_color;
 						}
@@ -216,7 +215,7 @@ PhotonMapping.prototype.get_map = function(map_type){
 */
 PhotonMapping.prototype.get_photons = function(map_type, position, quantity, shape=null){
 	let photon_map = this.get_map(map_type);
-	// photons as a proportion	
+	// photons as a proportion
 	// let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
 	// photons as quantity
 	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);

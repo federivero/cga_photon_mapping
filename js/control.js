@@ -240,6 +240,7 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
+    /*
 	let shapes = [
         new Sphere(
             new Transform(
@@ -336,8 +337,9 @@ Control.loadScene = function() {
             new Color(100,100,100)
         )
     ];
+    */
     let lights = Control.parse_lights_from_config();
-    // let shapes = Control.parse_shapes_from_config();
+    let shapes = Control.parse_shapes_from_config();
     for (var i = 0; i < Control.model_shapes.length; i++){
         shapes.push(Control.model_shapes[i]);
     }
@@ -384,7 +386,7 @@ Control.startPhotonMapping = function(){
 
 	if (ok){
 		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
-		this.photonMapping = new PhotonMapping(1000, 1000);
+		this.photonMapping = new PhotonMapping(1000, 10000);
         this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
         console.log('finished generating global photons!')
         this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
@@ -609,6 +611,7 @@ Control.parse_lights_from_config = function(){
         }
         lights.push(l);
     }
+    console.log(lights);
     return lights;
 }
 

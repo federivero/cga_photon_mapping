@@ -2,7 +2,7 @@
 const nPhong = 5;
 const nearby_photon_qty = 5;
 const diffuse_photon_scale_factor = 1;
-const caustic_photon_scale_factor = 10;
+const caustic_photon_scale_factor = 1;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
@@ -72,17 +72,17 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	}
 	caustic_component = this.calculate_caustic_photons_color(collision, v1, v2, depth-1, refraction_coefficient);
 	// this is for seeing only the refraction component
-	return new Color(
-		(
-			caustic_component.r * caustic_photon_scale_factor
-		),
-		(
-			caustic_component.g * caustic_photon_scale_factor
-		),
-		(
-			caustic_component.b * caustic_photon_scale_factor
-		)
-	);
+	// return new Color(
+	// 	(
+	// 		caustic_component.r * caustic_photon_scale_factor
+	// 	),
+	// 	(
+	// 		caustic_component.g * caustic_photon_scale_factor
+	// 	),
+	// 	(
+	// 		caustic_component.b * caustic_photon_scale_factor
+	// 	)
+	// );
 	return new Color(
 		(
 			this.diffuse_reflection_coefficient * light_component.r
@@ -237,6 +237,7 @@ Shape.prototype.refraction_direction = function(collision, v1, refraction_coeffi
 	let entry_angle = source_direction.angleTo(normal);
 
 	let axis = normal.cross(source_direction);
+	// let axis = source_direction.cross(normal);
 	Vector.unit(axis, axis);
 	//logica de adentro/afuera: si el rayo viene con el mismo material es que estoy adentro y por lo tanto tengo que salir afuera
 	//esto implica que no puede haber un objeto refractante dentro de otro
@@ -254,7 +255,6 @@ Shape.prototype.refraction_direction = function(collision, v1, refraction_coeffi
 		opposite_refraction_coefficient = refraction_coefficient;
 	} else {
 		let exit_angle = Math.asin( (Math.sin(entry_angle) * (refraction_coefficient / opposite_refraction_coefficient)) );
-
 		Vector.negative(normal, normal);
 		Vector.rotate(normal, axis, exit_angle, exit_vector);
 	}
@@ -313,6 +313,13 @@ Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, de
 	return c;
 }
 
+Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
+	// Page 33 of the book Siggraph 2002 - Course 43 - A Practical Guide To Global Illumination Using Photon Mapping
+	// computed_max_distance is max_distance squared times 2
+	return (
+		0.918 * (1 - ((1 - Math.pow(Math.E, (-1.953 * (Math.pow(distance, 2) / computed_max_distance)))) / 0.8581521110346773))
+	)
+}
 
 Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, depth, refraction_coefficient){
 	// first get the nearby photons
@@ -323,14 +330,19 @@ Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, de
 
 	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.CAUSTIC) / photons.length;
 
+	let distances = photons.map(photon => collision.distanceTo(photon.position));
+	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, distances), 2))
+
 	for (let i = 0, leni = photons.length; i < leni; ++i){
 		let photon = photons[i];
 		// TODO: maybe save the calculated color instead of the entry color?
 		// do we use the entry color at all?
 		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
-		c.r += photon_color.r * photon.power * power_compensation;
-		c.g += photon_color.g * photon.power * power_compensation;
-		c.b += photon_color.b * photon.power * power_compensation;
+		// photon_color = photon.color;
+		let filter = this.gaussian_filter(distances[i], computed_max_distance);
+		c.r += photon_color.r * photon.power * filter * power_compensation;
+		c.g += photon_color.g * photon.power * filter * power_compensation;
+		c.b += photon_color.b * photon.power * filter * power_compensation;
 	}
 	c.r = Math.min(c.r, 255);
 	c.g = Math.min(c.g, 255);
