@@ -5,30 +5,31 @@ var context = canvas.getContext('2d');
 var Control = {};
 
 Control.ready_for_input = false;
+Control.model_shapes = [];
 
 Control.initialize = function(){
     Control.initialize_canvas();
     Control.initializeFileUpload();
 
-    var config_loaded = function(){
-        Control.loadScene();
-        Control.start_photon_mapping();
-    }
 
-    Control.load_default_configuration(config_loaded);
+    Control.load_default_configuration(this.config_loaded);
 
     //Control.tests();
 }
 
-Control.load_default_configuration = function(config_loaded){
+Control.config_loaded = function(){
+    Control.loadScene();
+    Control.start_photon_mapping();
+}
+
+Control.load_default_configuration = function(){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 Control.parse_config(xhr.responseText);
-                config_loaded();
             } else {
-
+                $.notify("No se pudo cargar la configuración por defecto", "error");
             }
         }
     };
@@ -45,6 +46,7 @@ Control.start_photon_mapping = function(){
     Control.rayTrace();
     Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
     this.ready_for_input = true;
+    $.notify("Finished", "info");
 }
 
 Control.tests = function(){
@@ -110,10 +112,19 @@ Control.parse_config = function(txtConfig){
     this.config.scene.viewport.height = this.config.scene.viewport.height || 10;
 
     this.config.scene.lights = this.config.scene.lights || [];
+
+    this.config.scene.models = this.config.scene.models || [];
+    this.loaded_models = 0;
+    for (var i = 0; i < this.config.scene.models.length; i++){
+        K3D.load(this.config.scene.models[i], Control.parse_obj_model);
+    }
+
+    if (this.config.scene.models.length == 0){
+        this.config_loaded();
+    }
 }
 
 Control.parse_obj_model = function(obj_txt){
-
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
     var color = new Color(200,0,0);
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
@@ -127,11 +138,18 @@ Control.parse_obj_model = function(obj_txt){
 
             verts.push(new Vector(x,y,z));
         }
-        var t = new Triangle(verts, null, color, 0, color, false, 0, 0);
-        Control.scene.shapes.push(t);
+        var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
+        Control.model_shapes.push(t);
+
+        if (Control.model_shapes.length > 100){
+            break;
+        }
     }
 
-    Control.start_photon_mapping();
+    Control.loaded_models++;
+    if (Control.loaded_models == Control.config.scene.models.length){
+        Control.config_loaded();
+    }
 }
 
 Control.eraseCanvas = function(){
@@ -318,7 +336,10 @@ Control.loadScene = function() {
     */
     let lights = Control.parse_lights_from_config();
     let shapes = Control.parse_shapes_from_config();
-    let camera = new Vector(this.config.scene.camera.x, this.config.scene.camera.x, this.config.scene.camera.x);
+    for (var i = 0; i < Control.model_shapes.length; i++){
+        shapes.push(Control.model_shapes[i]);
+    }
+    let camera = new Vector(this.config.scene.camera.x, this.config.scene.camera.y, this.config.scene.camera.z);
     let viewport = {
         center: new Vector(this.config.scene.viewport.center.x, this.config.scene.viewport.center.y, this.config.scene.viewport.center.z),
         width: this.config.scene.viewport.width,

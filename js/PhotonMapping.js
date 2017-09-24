@@ -19,7 +19,7 @@ PhotonMapping = function(photonCount){
 }
 
 PhotonMapping.MAX_PHOTON_BOUNCE = 4;
-PhotonMapping.PHOTON_PROPORTION = 0.002;
+PhotonMapping.PHOTON_PROPORTION = 0.001;
 
 
 PhotonMapping.prototype.generatePhotons = function(scene){
@@ -172,14 +172,15 @@ PhotonMapping.prototype.get_map = function(type){
 */
 PhotonMapping.prototype.get_photons = function(map_type, position, quantity, shape=null){
 	let photon_map = this.get_map(map_type);
-	// photons as a proportion
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
+	// photons as a proportion	
+	// let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
 	// photons as quantity
-	//let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);
 	return nearest_indexes.filter(i => (shape == null) || (photon_map.photons[i].shape == shape)).map(i => photon_map.photons[i]);
 }
 
 PhotonMapping.prototype.photon_count_per_point = function(map_type){
 	let photon_map = this.get_map(map_type);
 	return Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length);
+	//return nearby_photon_qty;
 }

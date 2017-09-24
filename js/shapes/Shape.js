@@ -1,7 +1,7 @@
 // TODO: specify this in config
 const nPhong = 5;
 const nearby_photon_qty = 5;
-const diffuse_photon_scale_factor = 2;
+const diffuse_photon_scale_factor = 1;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
