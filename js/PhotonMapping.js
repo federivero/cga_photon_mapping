@@ -7,31 +7,32 @@ const PhotonMapEnum = {
 	CAUSTIC : 1
 }
 
-PhotonMapping = function(photonCount){
-
-	this.photonCount = photonCount || 0;
-	this.photonsPerLight = [];
-
-	this.photonMap = {
+PhotonMapping = function(globalPhotonCount, causticPhotonCount){
+	this.globalPhotonMap = {
+		photonCount: globalPhotonCount || 0,
 		photons: [],
 		kdtree: null
 	};
+
+	this.causticPhotonMap = {
+		photonCount: causticPhotonCount || 0,
+		photons: [],
+		kdtree: null
+	}
 }
 
 PhotonMapping.MAX_PHOTON_BOUNCE = 4;
 PhotonMapping.PHOTON_PROPORTION = 0.002;
 
 
-PhotonMapping.prototype.generatePhotons = function(scene){
-
-	scene.calculateScenePower();
-
-	this.calculatePhotonsPerLight(scene.lights, scene.scenePower);
+PhotonMapping.prototype.generatePhotons = function(map_type, scene){
+	let photonMap = this.get_map(map_type);
+	let photonsPerLight = this.calculatePhotonsPerLight(scene.lights, scene.scenePower, photonMap.photonCount);
 
 	// shoot photons from each light
-	for (let l = 0; l < this.photonsPerLight.length; l++){
-		let light = this.photonsPerLight[l].light;
-		emitted_photons = this.photonsPerLight[l].photonCount;
+	for (let l = 0; l < photonsPerLight.length; l++){
+		let light = photonsPerLight[l].light;
+		emitted_photons = photonsPerLight[l].photonCount;
 		// lifted straight from the book
 		while (emitted_photons--) {
 			let vector_end = Vector.randomDirection();
@@ -42,10 +43,37 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 			Vector.add(vector_start, vector_end, vector_end);
 			let bounces = 0;
 			let current_color = light.color;
+			let refraction_coefficient = scene.air_refraction_coefficient;
 			let shape = null;
+			let trace_result = null;
+			if (map_type == PhotonMapEnum.CAUSTIC) {
+				// WARNING: IF THERE ARE NO REACHABLE CAUSTICS IN THE SCENE FOR THIS LIGHT THIS WILL BREAK
+				// TODO: add an error if there aren't caustics in the scene
+				// TODO: currently the trace_result is calculated again at the start of the loop, maybe fix this?
+				// let x = 0;
+				while (true) {
+					// ++x;
+					// if (x % 1000 == 0) {
+					// 	console.log(x);
+					// 	// console.log(trace_result)
+					// 	if (trace_result.nearest_shape.class_name === 'Plane'){
+					// 		console.log(trace_result)
+					// 	}
+					// 	if (x == 1000000) {
+					// 		return
+					// 	}
+					// }
+					trace_result = scene.trace(vector_start, vector_end);
+					if (trace_result.found && (trace_result.nearest_shape.specular_coefficient > 0 || trace_result.nearest_shape.transparency > 0)) {
+						break;
+					}
+					vector_end = Vector.randomDirection(vector_end);
+					Vector.add(vector_start, vector_end, vector_end);
+				}
+			}
 			// TODO: move depth to an external parameter
 			while (!photonAbsorbed && bounces < PhotonMapping.MAX_PHOTON_BOUNCE){
-				let trace_result = scene.trace(vector_start, vector_end, shape);
+				trace_result = scene.trace(vector_start, vector_end, shape);
 				if (!trace_result.found){
 					photonAbsorbed = true; // photon lost in the darkness, for real
 				} else {
@@ -60,34 +88,48 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 						if (bounces !== 0) {
 							let photon = new Photon(
 								current_color, collision,
-								light.power / this.photonsPerLight[l].photonCount,
+								light.power / photonsPerLight[l].photonCount,
 								vector_start, shape
 							);
-							this.storePhoton(photon);
+							photonMap.photons.push(photon);
 						}
 						// set vector_start, vector_end, current_color for the next step
-						vector_start = collision
-						vector_end = shape.diffuse_reflection_direction(collision, vector_end);
+						vector_start = collision;
+						vector_end = shape.diffuse_reflection_direction(collision, refraction_coefficient, vector_end);
 						current_color = shape.calculate_diffuse_photon_color(current_color);
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
-						// use specular_reflection_direction
-						photonAbsorbed = true;
+						if (map_type === PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
+						} else if (map_type === PhotonMapEnum.CAUSTIC) {
+							vector_end = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
+							vector_start = collision;
+							// TODO: allow for colored mirrors
+							current_color = current_color;
+						}
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
-						// use refraction_direction
-						photonAbsorbed = true;
+						if (map_type == PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
+						} else if (map_type == PhotonMapEnum.CAUSTIC) {
+							let refraction_result =  shape.refraction_direction(collision, vector_start, refraction_coefficient, vector_end);
+							vector_end = refraction_result.exit_vector;
+							refraction_coefficient = refraction_result.opposite_refraction_coefficient;
+							vector_start = collision;
+							// TODO: allow for colored glass
+							current_color = current_color;
+						}
 					} else {
 						// absorption
 						// don't save the first step
 						if (bounces !== 0) {
 							let photon = new Photon(
 								current_color, collision,
-								light.power / this.photonsPerLight[l].photonCount,
+								light.power / photonsPerLight[l].photonCount,
 								vector_start, shape
 							);
-							this.storePhoton(photon);
+							photonMap.photons.push(photon);
 						}
 						photonAbsorbed = true;
 					}
@@ -96,25 +138,27 @@ PhotonMapping.prototype.generatePhotons = function(scene){
 			}
 		}
 	}
-	this.generateKDTree();
+	photonMap.kdtree = this.generateKDTree(photonMap.photons);
 }
 
-PhotonMapping.prototype.generateKDTree = function() {
-	let points = this.photonMap.photons.map(photon => {
+// given a list of photons returns the kdtree for those photons
+PhotonMapping.prototype.generateKDTree = function(photons) {
+	let points = photons.map(photon => {
 		return photon.position.toArray();
 	});
-	this.photonMap.kdtree = createKDTree(points);
+	return createKDTree(points);
 }
 
-PhotonMapping.prototype.storePhoton = function(photon){
-	this.photonMap.photons.push(photon);
-}
-
-PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower){
-	for (var i = 0; i < lights.length; i++){
-		var lightPhotonCount = Math.round(this.photonCount * lights[i].power / scenePower);
-		this.photonsPerLight.push({light : lights[i], photonCount : lightPhotonCount});
+PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower, photonCount){
+	let photonsPerLight = [];
+	for (let i = 0; i < lights.length; i++){
+		let lightPhotonCount = Math.round(photonCount * lights[i].power / scenePower);
+		photonsPerLight.push({
+			light : lights[i],
+			photonCount : lightPhotonCount
+		});
 	}
+	return photonsPerLight;
 }
 
 // Draws the photons into the canvas.
@@ -154,11 +198,11 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 
 }
 
-PhotonMapping.prototype.get_map = function(type){
+PhotonMapping.prototype.get_map = function(map_type){
 	let photon_map = null;
-	switch(type){
+	switch(map_type){
 		case PhotonMapEnum.GLOBAL:
-			photon_map = this.photonMap;
+			photon_map = this.globalPhotonMap;
 			break;
 		case PhotonMapEnum.CAUSTIC:
 			photon_map = this.causticPhotonMap;
