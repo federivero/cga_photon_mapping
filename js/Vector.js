@@ -185,15 +185,24 @@ Vector.rotate = function(a, axis, angle, b) {
 // Vector.randomDirection() returns a vector with a length of 1 and a statistically uniform direction.
 // Vector.lerp() performs linear interpolation between two vectors.
 
-Vector.fromAngles = function(theta, phi) {
-	return new Vector(Math.cos(theta) * Math.cos(phi), Math.sin(phi), Math.sin(theta) * Math.cos(phi));
+Vector.fromAngles = function(theta, phi, v=null) {
+	if (v === null) {
+		v = new Vector();
+	}
+	v.x = Math.cos(theta) * Math.cos(phi);
+	v.y = Math.sin(phi);
+	v.z = Math.sin(theta) * Math.cos(phi);
+	return v;
 };
-Vector.randomDirection = function() {
-	return Vector.fromAngles(Math.random() * Math.PI * 2, Math.asin(Math.random() * 2 - 1));
+Vector.randomDirection = function(v=null) {
+	return Vector.fromAngles(Math.random() * Math.PI * 2, Math.asin(Math.random() * 2 - 1), v);
 };
-Vector.randomDirectionCartesian = function() {
+Vector.randomDirectionCartesian = function(v=null) {
 	// alternative implementation lifted straight from the book
 	// I trust this one more than the other one
+	if (v === null) {
+		v = new Vector();
+	}
 	let x, y, z;
 	do {
 		// random number between -1 and 1
@@ -202,7 +211,10 @@ Vector.randomDirectionCartesian = function() {
 		z = Math.random() * 2 - 1;
 		// use simple rejection sampling to find diffuse photon direction
 	} while (x*x + y*y + z*z > 1);
-	return new Vector(x, y, z);
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	return v;
 };
 Vector.min = function(a, b) {
 	return new Vector(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z));

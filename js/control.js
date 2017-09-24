@@ -240,7 +240,6 @@ Control.initializeFileUpload = function(){
 }
 
 Control.loadScene = function() {
-    /*
 	let shapes = [
         new Sphere(
             new Transform(
@@ -259,8 +258,12 @@ Control.loadScene = function() {
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40),
-            0.9,
-            new Color(100,100,100)
+            0.0,
+            new Color(100,100,100),
+            0,
+            false,
+            1,
+            1.5
         ),
         // new Sphere(
         //     new Transform(
@@ -333,9 +336,8 @@ Control.loadScene = function() {
             new Color(100,100,100)
         )
     ];
-    */
     let lights = Control.parse_lights_from_config();
-    let shapes = Control.parse_shapes_from_config();
+    // let shapes = Control.parse_shapes_from_config();
     for (var i = 0; i < Control.model_shapes.length; i++){
         shapes.push(Control.model_shapes[i]);
     }
@@ -381,16 +383,18 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(this.config.photon_count);
-        this.photonMapping.generatePhotons(this.scene);
-
-        console.log('finished generating photons!')
+		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
+		this.photonMapping = new PhotonMapping(1000, 1000);
+        this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
+        console.log('finished generating global photons!')
+        this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
+        console.log('finished generating caustic photons!')
         this.generatePhotonImage();
 	}
 }
 
 Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
+    this.photonMapping.drawPhotonMap(PhotonMapEnum.CAUSTIC, this.scene);
 }
 
 // Changes canvas width and heght to match viewport's aspect ratio
@@ -599,7 +603,7 @@ Control.parse_lights_from_config = function(){
                         new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
                     ),
                     new Color(config_light.color.r, config_light.color.g, config_light.color.b),
-                    config_light.power 
+                    config_light.power
                 );
                 break;
         }
@@ -615,7 +619,7 @@ Control.parse_shapes_from_config = function(){
         var config_shape = this.config.scene.shapes[i];
         var s;
         switch (config_shape.type){
-            case "plane": 
+            case "plane":
                 s = new Plane(
                     [
                         new Vector(config_shape.points[0].x, config_shape.points[0].y, config_shape.points[0].z),
@@ -635,7 +639,7 @@ Control.parse_shapes_from_config = function(){
                     config_shape.transparency || 0,
                     config_shape.refraction_coefficient || 0
                 );
-                break;      
+                break;
             case "sphere":
                 s = new Sphere(
                     new Transform(

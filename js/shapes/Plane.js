@@ -22,6 +22,8 @@ function Plane (points,
 	// 'd' is calculated by N . P = -d, with p any point in the plane.
 	//this.d = points[0].dot(this.normal);
 	this.points = points;
+
+	this.class_name = 'Plane';
 };
 
 Plane.prototype = Object.create(Shape.prototype);
