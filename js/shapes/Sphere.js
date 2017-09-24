@@ -13,6 +13,8 @@ function Sphere(transform,
 	};
 	this.center = transform.position;
 	this.radius = transform.scale.x;
+
+	this.class_name = 'Sphere';
 };
 
 Sphere.prototype = Object.create(Shape.prototype);

@@ -1,7 +1,3 @@
-// TODO: specify this in config
-const nPhong = 5;
-const nearby_photon_qty = 5;
-const diffuse_photon_scale_factor = 1;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
@@ -24,6 +20,10 @@ function Shape (transform,
 	this.refraction_coefficient = refraction_coefficient;
 };
 
+Shape.DIFFUSE_PHOTON_SCALE_FACTOR = 1; // overriden by config
+Shape.CAUSTIC_PHOTON_SCALE_FACTOR = 1; // overriden by config
+Shape.NPHONG = 5; // overriden by config
+
 Shape.prototype = {};
 
 Shape.prototype.collide = function(ray) {
@@ -44,7 +44,6 @@ Shape.prototype.calculate_normal = function(p, normal=null) {
 // 'refraction_coefficient' is the refraction coefficient of the material from where the ray is coming from
 // by default it's the air
 Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=Control.scene.air_refraction_coefficient) {
-	// return this.calculate_diffuse_reflections(collision, v1, v2, depth-1, refraction_coefficient);
 	// Calculate light color
 	let light_component = this.calculate_light_color(collision, v1, v2);
 	let specular_component, refraction_component, diffuse_reflection_component, caustic_component;
@@ -65,22 +64,22 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			refraction_component = new Color();
 		}
 	}
-	//let global_map_color = this.calculate_global_map_component(collision, v1, v2);
 	if (!this.is_mirror) {
-		diffuse_reflection_component = this.calculate_diffuse_photons_color(collision, v1, v2);
+		diffuse_reflection_component = this.calculate_diffuse_photons_color(collision, v1, v2, depth-1, refraction_coefficient);
 	} else {
 		diffuse_reflection_component = new Color();
 	}
-	// this is for seeing only the reflection component
+	caustic_component = this.calculate_caustic_photons_color(collision, v1, v2, depth-1, refraction_coefficient);
+	// this is for seeing only the refraction component
 	// return new Color(
 	// 	(
-	// 		diffuse_reflection_component.r * diffuse_photon_scale_factor
+	// 		caustic_component.r * caustic_photon_scale_factor
 	// 	),
 	// 	(
-	// 		diffuse_reflection_component.g * diffuse_photon_scale_factor
+	// 		caustic_component.g * caustic_photon_scale_factor
 	// 	),
 	// 	(
-	// 		diffuse_reflection_component.b * diffuse_photon_scale_factor
+	// 		caustic_component.b * caustic_photon_scale_factor
 	// 	)
 	// );
 	return new Color(
@@ -88,19 +87,22 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 			this.diffuse_reflection_coefficient * light_component.r
 			+ this.specular_coefficient * specular_component.r
 			+ this.transparency * refraction_component.r
-			+ diffuse_reflection_component.r * diffuse_photon_scale_factor
+			+ diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			+ caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.g
 			+ this.specular_coefficient * specular_component.g
 			+ this.transparency * refraction_component.g
-			+ diffuse_reflection_component.g * diffuse_photon_scale_factor
+			+ diffuse_reflection_component.g * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			+ caustic_component.g * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.b
 			+ this.specular_coefficient * specular_component.b
 			+ this.transparency * refraction_component.b
-			+ diffuse_reflection_component.b * diffuse_photon_scale_factor
+			+ diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			+ caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		)
 	);
 };
@@ -121,7 +123,7 @@ Shape.prototype.calculate_diffuse_photon_color = function(incoming_color, ret=nu
 
 // Calculate de direction of a photon bounce (always will be a random hemisphere direction)
 // if ret is provided then it is used for the return result
-Shape.prototype.diffuse_reflection_direction = function(collision, ret=null) {
+Shape.prototype.diffuse_reflection_direction = function(collision, refraction_coefficient, ret=null) {
 	if (ret == null) {
 		ret = new Vector();
 	}
@@ -164,7 +166,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			// esto esta levantado directo de unas diapositivas
 			let vect_V = v1.subtract(collision).unit();
 			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
-			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), nPhong);
+			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), Shape.NPHONG);
 
 			ret_color.r += Math.max(0, dif_factor * this.diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
 			ret_color.g += Math.max(0, dif_factor * this.diffuse_color.g + spec_RVnK_factor * this.specular_color.g);
@@ -236,6 +238,7 @@ Shape.prototype.refraction_direction = function(collision, v1, refraction_coeffi
 	let entry_angle = source_direction.angleTo(normal);
 
 	let axis = normal.cross(source_direction);
+	// let axis = source_direction.cross(normal);
 	Vector.unit(axis, axis);
 	//logica de adentro/afuera: si el rayo viene con el mismo material es que estoy adentro y por lo tanto tengo que salir afuera
 	//esto implica que no puede haber un objeto refractante dentro de otro
@@ -253,7 +256,6 @@ Shape.prototype.refraction_direction = function(collision, v1, refraction_coeffi
 		opposite_refraction_coefficient = refraction_coefficient;
 	} else {
 		let exit_angle = Math.asin( (Math.sin(entry_angle) * (refraction_coefficient / opposite_refraction_coefficient)) );
-
 		Vector.negative(normal, normal);
 		Vector.rotate(normal, axis, exit_angle, exit_vector);
 	}
@@ -290,7 +292,7 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 
 Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
-	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, nearby_photon_qty, this);
+	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, this);
 	// then, integrate
 	let c = new Color();
 	let photon_color = new Color();
@@ -312,7 +314,40 @@ Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, de
 	return c;
 }
 
+Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
+	// Page 33 of the book Siggraph 2002 - Course 43 - A Practical Guide To Global Illumination Using Photon Mapping
+	// computed_max_distance is max_distance squared times 2
+	return (
+		0.918 * (1 - ((1 - Math.pow(Math.E, (-1.953 * (Math.pow(distance, 2) / computed_max_distance)))) / 0.8581521110346773))
+	)
+}
 
-Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2){
+Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, depth, refraction_coefficient){
+	// first get the nearby photons
+	let photons = Control.photonMapping.get_photons(PhotonMapEnum.CAUSTIC, collision, this);
+	// then, integrate
+	let c = new Color();
+	let photon_color = new Color();
+
+	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.CAUSTIC) / photons.length;
+
+	let distances = photons.map(photon => collision.distanceTo(photon.position));
+	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, distances), 2))
+
+	for (let i = 0, leni = photons.length; i < leni; ++i){
+		let photon = photons[i];
+		// TODO: maybe save the calculated color instead of the entry color?
+		// do we use the entry color at all?
+		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
+		// photon_color = photon.color;
+		let filter = this.gaussian_filter(distances[i], computed_max_distance);
+		c.r += photon_color.r * photon.power * filter * power_compensation;
+		c.g += photon_color.g * photon.power * filter * power_compensation;
+		c.b += photon_color.b * photon.power * filter * power_compensation;
+	}
+	c.r = Math.min(c.r, 255);
+	c.g = Math.min(c.g, 255);
+	c.b = Math.min(c.b, 255);
+	return c;
 
 }

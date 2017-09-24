@@ -94,7 +94,20 @@ Control.parse_config = function(txtConfig){
 
     // set default values
     this.config.resolution = this.config.resolution || {};
-    this.config.photon_count = this.config.photon_count || 10000;
+    this.config.global_map_photon_count = this.config.photon_count || 10000;
+    this.config.photon_max_bounce = this.config.photon_max_bounce || 4;
+    this.config.nearby_photons_proportion = this.config.nearby_photons_proportion || 0.0001;
+    this.config.nearby_photons_fixed_quantity = this.config.nearby_photons_fixed_quantity || 5;
+    this.config.nearby_photons_per_point_type = this.config.nearby_photons_per_point_type || 'proportional';
+    this.config.diffuse_photon_scale_factor = this.config.diffuse_photon_scale_factor || 1;
+    this.config.caustic_photon_scale_factor = this.config.caustic_photon_scale_factor || 1;
+    PhotonMapping.MAX_PHOTON_BOUNCE = this.config.photon_max_bounce;
+    PhotonMapping.PHOTON_PROPORTION = this.config.nearby_photons_proportion;
+    PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = this.config.nearby_photons_fixed_quantity;
+    PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = this.config.nearby_photons_per_point_type;
+
+    Shape.DIFFUSE_PHOTON_SCALE_FACTOR = this.config.diffuse_photon_scale_factor;
+    Shape.CAUSTIC_PHOTON_SCALE_FACTOR = this.config.caustic_photon_scale_factor;
 
     this.config.scene = this.config.scene || {};
     this.config.scene.models = this.config.scene.models || [];
@@ -265,8 +278,12 @@ Control.loadScene = function() {
                 new Vector(1, 1, 1)
             ),
             new Color(20, 180, 40),
-            0.9,
-            new Color(100,100,100)
+            0.0,
+            new Color(100,100,100),
+            0,
+            false,
+            1,
+            1.5
         ),
         // new Sphere(
         //     new Transform(
@@ -387,16 +404,18 @@ Control.startPhotonMapping = function(){
 	var ok = true; //Control.controlarPrecondiciones();
 
 	if (ok){
-		this.photonMapping = new PhotonMapping(this.config.photon_count);
-        this.photonMapping.generatePhotons(this.scene);
-
-        console.log('finished generating photons!')
+		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
+		this.photonMapping = new PhotonMapping(this.config.global_map_photon_count, this.config.caustic_map_photon_count);
+        this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
+        console.log('finished generating global photons!')
+        this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
+        console.log('finished generating caustic photons!')
         this.generatePhotonImage();
 	}
 }
 
 Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.GLOBAL, this.scene);
+    this.photonMapping.drawPhotonMap(PhotonMapEnum.CAUSTIC, this.scene);
 }
 
 // Changes canvas width and heght to match viewport's aspect ratio
@@ -605,12 +624,13 @@ Control.parse_lights_from_config = function(){
                         new Vector(config_light.position.x, config_light.position.y, config_light.position.z), null, null
                     ),
                     new Color(config_light.color.r, config_light.color.g, config_light.color.b),
-                    config_light.power 
+                    config_light.power
                 );
                 break;
         }
         lights.push(l);
     }
+    console.log(lights);
     return lights;
 }
 
@@ -621,7 +641,7 @@ Control.parse_shapes_from_config = function(){
         var config_shape = this.config.scene.shapes[i];
         var s;
         switch (config_shape.type){
-            case "plane": 
+            case "plane":
                 s = new Plane(
                     [
                         new Vector(config_shape.points[0].x, config_shape.points[0].y, config_shape.points[0].z),
@@ -641,7 +661,7 @@ Control.parse_shapes_from_config = function(){
                     config_shape.transparency || 0,
                     config_shape.refraction_coefficient || 0
                 );
-                break;      
+                break;
             case "sphere":
                 s = new Sphere(
                     new Transform(
