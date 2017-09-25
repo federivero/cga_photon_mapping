@@ -80,7 +80,8 @@
 			}
 		],
 		"lights" : [
-			{ "type" : "point", "position" : {"x" : 10, "y" : 18, "z" : 10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100}
+			{ "type" : "point", "position" : {"x" : 10, "y" : 18, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : 10.3, "y" : 18, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100}
 		],
 		"camera" : {"x" : 0, "y" : 0, "z" : 0},
 		"viewport": {

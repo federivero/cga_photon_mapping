@@ -386,17 +386,30 @@ Control.startPhotonMapping = function(){
 
 	if (ok){
 		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
-		this.photonMapping = new PhotonMapping(1000, 10000);
+		this.photonMapping = new PhotonMapping(1000, 1000);
         this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
         console.log('finished generating global photons!')
         this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
         console.log('finished generating caustic photons!')
-        this.generatePhotonImage();
+        this.generatePhotonImage(PhotonMapEnum.CAUSTIC);
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function demo() {
+            console.log('Taking a break...');
+            await sleep(2000);
+            console.log('Two second later');
+        }
+
+        demo();
+        this.generatePhotonImage(PhotonMapEnum.GLOBAL);
 	}
 }
 
-Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.CAUSTIC, this.scene);
+Control.generatePhotonImage = function(map_type){
+    this.photonMapping.drawPhotonMap(map_type, this.scene);
 }
 
 // Changes canvas width and heght to match viewport's aspect ratio
