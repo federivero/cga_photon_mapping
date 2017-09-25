@@ -22,7 +22,7 @@ PhotonMapping = function(globalPhotonCount, causticPhotonCount){
 }
 
 PhotonMapping.MAX_PHOTON_BOUNCE = 4; // overriden by config
-PhotonMapping.PHOTON_PROPORTION = 0.001; // overriden by config 
+PhotonMapping.PHOTON_PROPORTION = 0.001; // overriden by config
 PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = "fixed"; // overriden by config. Options: "fixed", "proportional"
 PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 5; // overriden by config
 
@@ -62,7 +62,11 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 				}
 			}
 			// TODO: move depth to an external parameter
-			while (!photonAbsorbed && bounces < PhotonMapping.MAX_PHOTON_BOUNCE){
+			let max_bounce = PhotonMapping.MAX_PHOTON_BOUNCE;
+			if (map_type === PhotonMapEnum.CAUSTIC) {
+				max_bounce = 3
+			}
+			while (!photonAbsorbed && bounces < max_bounce){
 				trace_result = scene.trace(vector_start, vector_end, shape);
 				if (!trace_result.found){
 					photonAbsorbed = true; // photon lost in the darkness, for real
@@ -90,9 +94,7 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
-						if (map_type === PhotonMapEnum.GLOBAL) {
-							photonAbsorbed = true;
-						} else if (map_type === PhotonMapEnum.CAUSTIC) {
+						{
 							let reflection_direction = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
 							Vector.add(collision, reflection_direction, vector_end);
 							vector_start = collision;
@@ -101,16 +103,14 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 						}
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
-						if (map_type == PhotonMapEnum.GLOBAL) {
-							photonAbsorbed = true;
-						} else if (map_type == PhotonMapEnum.CAUSTIC) {
+						{
 							let refraction_result =  shape.refraction_direction(collision, vector_start, refraction_coefficient, vector_end);
 							refraction_coefficient = refraction_result.opposite_refraction_coefficient;
 							// same as in calculate_refraction_color
 							// I know it's a mess, sorry
 
 							// don't collide with the exit surface
-							let collision_no_error = Vector.multiply(collision, 0.0001, vector_start);
+							let collision_no_error = collision.multiply(0.0001);
 							Vector.add(collision, collision_no_error, collision_no_error);
 							vector_end = refraction_result.exit_vector;
 							Vector.add(vector_end, collision_no_error, vector_end)
@@ -176,7 +176,7 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene, clear_canvas){
 		context.fillStyle = "black";
 		context.fillRect(0, 0, canvas.width, canvas.height);
 	}
-	
+
 	let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
 	for (let i = 0; i < photon_map.length; i++){
