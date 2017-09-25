@@ -6,6 +6,7 @@ var Control = {};
 
 Control.ready_for_input = false;
 Control.model_shapes = [];
+Control.textures = {};
 
 Control.initialize = function(){
     Control.initialize_canvas();
@@ -42,7 +43,6 @@ Control.start_photon_mapping = function(){
     this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
     Control.startPhotonMapping();
-    Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
     Control.rayTrace();
     Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
     this.ready_for_input = true;
@@ -103,7 +103,7 @@ Control.parse_config = function(txtConfig){
 
     // set default values
     this.config.resolution = this.config.resolution || {};
-    this.config.global_map_photon_count = this.config.photon_count || 10000;
+    this.config.global_map_photon_count = this.config.global_map_photon_count || 10000;
     this.config.photon_max_bounce = this.config.photon_max_bounce || 4;
     this.config.nearby_photons_proportion = this.config.nearby_photons_proportion || 0.0001;
     this.config.nearby_photons_fixed_quantity = this.config.nearby_photons_fixed_quantity || 5;
@@ -205,9 +205,12 @@ Control.parse_obj_model = function(obj_txt, model_config){
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
         var verts = [];
         var normals = [];
+        var texture_coordinates = [];
+        var has_texture = false;
         for (var j = 0; j < 3; j++){
             var v_i = parsed_obj.i_verts[i + j] * 3; // vertex index
             var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
+            var t_i = parsed_obj.i_uvt[i + j] * 2; // texture index
 
             var x = parsed_obj.c_verts[v_i];
             var y = parsed_obj.c_verts[v_i+1];
@@ -219,7 +222,14 @@ Control.parse_obj_model = function(obj_txt, model_config){
             y = parsed_obj.c_norms[n_i+1];
             z = parsed_obj.c_norms[n_i+2];
 
-            normals.push(new Vector(x,y,z));
+            normals.push(new Vector(x,y,z));    
+
+            if (!isNaN(t_i)){
+                var u = parsed_obj.c_uvt[t_i];
+                var v = parsed_obj.c_uvt[t_i + 1];
+                texture_coordinates.push([u,v]);
+                has_texture = (model_config.texture != "");
+            }
         }
 
         // scale and rotate
@@ -237,14 +247,37 @@ Control.parse_obj_model = function(obj_txt, model_config){
         }   
 
         var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
+        t.has_texture = has_texture;
+        t.texture_coordinates = texture_coordinates;
+        t.texture_name = model_config.texture;
         t.plane.setNormal(normals[1]);
 
         Control.model_shapes.push(t);
     }
 
-    Control.loaded_models++;
-    if (Control.loaded_models == Control.config.scene.models.length){
-        Control.config_loaded();
+    if (model_config.texture != ""){
+        var img = document.createElement('img');
+        img.src = model_config.texture;
+        img.onload = function(){
+            // image is loaded, draw everything onto a canvas and extract it's pixels
+            var texture_canvas = document.createElement('canvas');
+            var texture_context = texture_canvas.getContext('2d');
+            texture_canvas.width = img.naturalWidth;
+            texture_canvas.height = img.naturalHeight;
+            texture_context.drawImage(img, 0, 0);
+            var texture_pixels = texture_context.getImageData(0, 0, texture_canvas.width, texture_canvas.height).data;
+            
+            Control.textures[model_config.texture] = { width: texture_canvas.width, height: texture_canvas.height, pixels : texture_pixels};
+            Control.loaded_models++;
+            if (Control.loaded_models == Control.config.scene.models.length){
+                Control.config_loaded();
+            }
+        }
+    }else{    
+        Control.loaded_models++;
+        if (Control.loaded_models == Control.config.scene.models.length){
+            Control.config_loaded();
+        }
     }
 
     Control.parsed_obj = parsed_obj;
@@ -486,15 +519,28 @@ Control.startPhotonMapping = function(){
 		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
 		this.photonMapping = new PhotonMapping(this.config.global_map_photon_count, this.config.caustic_map_photon_count);
         this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
-        console.log('finished generating global photons!')
+        //console.log('finished generating global photons!')
         this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
-        console.log('finished generating caustic photons!')
-        this.generatePhotonImage();
+        //console.log('finished generating caustic photons!')
+        
+        // generate image with the global photon map
+        this.generatePhotonImage(PhotonMapEnum.GLOBAL, true);
+        Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
+        
+        // generate image with the caustic photon map
+        this.generatePhotonImage(PhotonMapEnum.CAUSTIC, true);
+        Control.captureCanvas(ImageTypeEnum.PHOTON_CAUSTIC_MAP);
+        
+        // generate image with both photon maps
+        this.generatePhotonImage(PhotonMapEnum.GLOBAL, true);
+        this.generatePhotonImage(PhotonMapEnum.CAUSTIC, false);
+        Control.captureCanvas(ImageTypeEnum.PHOTON_MULTIMAP);
+        
 	}
 }
 
-Control.generatePhotonImage = function(){
-    this.photonMapping.drawPhotonMap(PhotonMapEnum.CAUSTIC, this.scene);
+Control.generatePhotonImage = function(map_type, clear_canvas){
+    this.photonMapping.drawPhotonMap(map_type, this.scene, clear_canvas);
 }
 
 // Changes canvas width and heght to match viewport's aspect ratio
@@ -573,6 +619,30 @@ Control.downloadCanvas = function(){
     downloadLink.click();
 }
 
+Control.downloadPhotonMap = function(){
+    bootbox.prompt({
+        title: "Seleccione tipo de mapa",
+        inputType: 'select',
+        inputOptions: [
+            {
+                text: 'Global',
+                value: '1',
+            },
+            {
+                text: 'Cáusticas',
+                value: '2',
+            }
+        ],
+        callback: function (result) {
+            if (result == '1'){
+                downloadFile("photon_global_map.json", JSON.stringify(Control.photonMapping.get_map(PhotonMapEnum.GLOBAL)));
+            }else if (result == '2'){
+                downloadFile("caustic_global_map.json", JSON.stringify(Control.photonMapping.get_map(PhotonMapEnum.CAUSTIC)));
+            }
+        }
+    });
+}
+
 var imageHistory = [];
 var currentImage = -1;
 
@@ -632,6 +702,7 @@ Control.updateControlButtons = function(){
 ImageTypeEnum = {
     PHOTON_GLOBAL_MAP : "PGM",
     PHOTON_CAUSTIC_MAP : "PCM",
+    PHOTON_MULTIMAP : "PMM",
     COMPLETE_RENDER : "CR"
 }
 
@@ -709,7 +780,6 @@ Control.parse_lights_from_config = function(){
         }
         lights.push(l);
     }
-    console.log(lights);
     return lights;
 }
 

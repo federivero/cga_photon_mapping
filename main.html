@@ -3,6 +3,7 @@
 		<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 	</head>
 	<link rel="stylesheet" type="text/css" href="css/main.css">
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
 
 	<body style="margin: 0px;">
 		<table style="width: 100%; height: 100%;">
@@ -24,6 +25,7 @@
 								<input class="UIButton" type="button" id="btnNextImage" onclick="Control.nextImage();" value=">" disabled/>
 								<input class="UIButton" type="button" onclick="Control.start_photon_mapping();" value="Iniciar"/>
 								<input class="UIButton" type="button" onclick="Control.downloadCanvas();" value="Descargar Imagen"/>
+								<input class="UIButton" type="button" onclick="Control.downloadPhotonMap();" value="Descargar Mapa de Fotones"/>
 							</div>
 						</div>
 					</div>
@@ -43,6 +45,7 @@
 	<a style="display: none;" id="downloadCanvasLink"></a>
 
 	<script type="text/javascript" src="js/libraries/jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="js/libraries/bootstrap.min.js"></script>
 	<script type="text/javascript" src="js/libraries/bootbox.min.js"></script>
 	<script type="text/javascript" src="js/libraries/jquery.ui.widget.js"></script>
 	<script type="text/javascript" src="js/libraries/notify.js"></script>

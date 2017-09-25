@@ -132,6 +132,24 @@ function hightlightColor (color) {
 
 /*  MISCELANEOUS FUNCTIONS  */
 
+/**
+* Downloads the text 'text' in a file named 'filename'
+*/
+function downloadFile(filename, text) {
+    var element = document.createElement('a');
+     var url = window.URL.createObjectURL(new Blob([text], {type: 'text/plain'}));
+    //element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('href', url);
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
 // for debug
 /*
 function sleep(ms) {

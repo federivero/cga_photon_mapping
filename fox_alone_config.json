@@ -13,7 +13,7 @@
 	"caustic_photon_scale_factor" : 2,
 	"scene" : {
 		"models" : [
-			{"model":"models/fox.obj", "texture" : "models/fox_texture.png", "transform" : 
+			{"model":"models/fox.obj", "transform" : 
 				{ "translate" : { "x": 0, "y" : -6, "z" : 0},
 				  "rotate"	  : { "x": 0, "y" : 70, "z" : 0},
 				  "scale"	  : { "x": 0.1, "y" : 0.1, "z" : 0.1}

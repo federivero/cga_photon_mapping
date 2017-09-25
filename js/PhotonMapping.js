@@ -163,7 +163,8 @@ PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower, 
 
 // Draws the photons into the canvas.
 // type: the photon map to draw (global, caustic, etc)
-PhotonMapping.prototype.drawPhotonMap = function(type, scene){
+// clear_canvas (boolean): if true, tints the canvs width black
+PhotonMapping.prototype.drawPhotonMap = function(type, scene, clear_canvas){
 	let photon_map = this.get_map(type).photons;
 
 	let ccount = 0;
@@ -171,8 +172,11 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene){
 	let xPixelDensity = scene.viewport.width / canvas.width;
 	let yPixelDensity = scene.viewport.height / canvas.height;
 
-	context.fillStyle = "black";
-	context.fillRect(0, 0, canvas.width, canvas.height);
+	if (clear_canvas){
+		context.fillStyle = "black";
+		context.fillRect(0, 0, canvas.width, canvas.height);
+	}
+	
 	let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
 	for (let i = 0; i < photon_map.length; i++){

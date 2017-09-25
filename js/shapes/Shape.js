@@ -1,3 +1,5 @@
+// photons farther away than this are filtered out
+const max_caustic_photon_distance = 1;
 
 function Shape (transform,
 				diffuse_color, diffuse_reflection_coefficient,
@@ -85,10 +87,10 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	return new Color(
 		(
 			this.diffuse_reflection_coefficient * light_component.r
-			//+ this.specular_coefficient * specular_component.r
-			//+ this.transparency * refraction_component.r
-			//+ diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
-			//+ caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
+			+ this.specular_coefficient * specular_component.r
+			+ this.transparency * refraction_component.r
+			+ diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			+ caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.g
@@ -99,10 +101,10 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.b
-			//+ this.specular_coefficient * specular_component.b
-			//+ this.transparency * refraction_component.b
-			//+ diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
-			//+ caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
+			+ this.specular_coefficient * specular_component.b
+			+ this.transparency * refraction_component.b
+			+ diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			+ caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		)
 	);
 };
@@ -157,11 +159,10 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 		// if the current light is on the visible side
 		// and the point isn't shadowed by another one
 		if ((light_direction.dot(normal) > 0) && (!light.is_shadow(collision, this))) {
-		//if (!light.is_shadow(collision, this)){
+			let light_intensity = light.intensity();
 			// Angle factor
 			light_direction = Vector.unit(light_direction, light_direction);
 			let dif_factor = light_direction.dot(normal);
-			//dif_factor = 1;
 			// Specular highlights
 			// esto esta levantado directo de unas diapositivas
 			let vect_V = v1.subtract(collision).unit();
@@ -169,12 +170,22 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), Shape.NPHONG);
 			spec_RVnK_factor = 0;
 
-			ret_color.r += Math.max(0, dif_factor * this.diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
-			ret_color.g += Math.max(0, dif_factor * this.diffuse_color.g + spec_RVnK_factor * this.specular_color.g);
-			ret_color.b += Math.max(0, dif_factor * this.diffuse_color.b + spec_RVnK_factor * this.specular_color.b);
+			let diffuse_color = this.get_diffuse_color(collision);
+
+			ret_color.r += Math.max(0, light_intensity.r * dif_factor * diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
+			ret_color.g += Math.max(0, light_intensity.g * dif_factor * diffuse_color.g + spec_RVnK_factor * this.specular_color.g);
+			ret_color.b += Math.max(0, light_intensity.b * dif_factor * diffuse_color.b + spec_RVnK_factor * this.specular_color.b);
 		}
 	}
 	return ret_color;
+}
+
+/*
+	Returns the diffuse_color of the shape at point p. Shapes with texture override
+	this method and return the proper color for the point
+*/
+Shape.prototype.get_diffuse_color = function(p){
+	return this.diffuse_color;
 }
 
 // Calculate de direction of a specular reflection
@@ -332,16 +343,25 @@ Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, de
 
 	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.CAUSTIC) / photons.length;
 
-	let distances = photons.map(photon => collision.distanceTo(photon.position));
-	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, distances), 2))
+	photons = photons.map(photon => {
+		return {
+			photon: photon,
+			distance: collision.distanceTo(photon.position)
+		}
+	});
+	// filter by distance
+	photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
+
+	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, photons.map(photon => photon.distance)), 2))
 
 	for (let i = 0, leni = photons.length; i < leni; ++i){
-		let photon = photons[i];
+		let photon = photons[i].photon;
+		let distance = photons[i].distance;
 		// TODO: maybe save the calculated color instead of the entry color?
 		// do we use the entry color at all?
 		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
 		// photon_color = photon.color;
-		let filter = this.gaussian_filter(distances[i], computed_max_distance);
+		let filter = this.gaussian_filter(distance, computed_max_distance);
 		c.r += photon_color.r * photon.power * filter * power_compensation;
 		c.g += photon_color.g * photon.power * filter * power_compensation;
 		c.b += photon_color.b * photon.power * filter * power_compensation;
