@@ -151,6 +151,13 @@ Control.parse_config = function(txtConfig){
         this.config.scene.models[i].transform.scale.x = this.config.scene.models[i].transform.scale.x || 1;
         this.config.scene.models[i].transform.scale.y = this.config.scene.models[i].transform.scale.y || 1;
         this.config.scene.models[i].transform.scale.z = this.config.scene.models[i].transform.scale.z || 1;
+
+        this.config.scene.models[i].texture = this.config.scene.models[i].texture || "";
+        
+        this.config.scene.models[i].color = this.config.scene.models[i].color || {};
+        this.config.scene.models[i].color.r = this.config.scene.models[i].color.r || 200; // default color light red
+        this.config.scene.models[i].color.g = this.config.scene.models[i].color.g || 0;
+        this.config.scene.models[i].color.b = this.config.scene.models[i].color.b || 0;
         
         var model_config = Control.config.scene.models[i];
         K3D.load(this.config.scene.models[i].model, function(obj_txt){
@@ -170,7 +177,7 @@ Control.parse_config = function(txtConfig){
 */
 Control.parse_obj_model = function(obj_txt, model_config){
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
-    var color = new Color(200,0,0);
+    var color = new Color(model_config.color.r, model_config.color.g, model_config.color.b);
 
     var rotation = model_config.transform.rotate;
     rotation.x = rotation.x * Math.PI / 180;
@@ -207,7 +214,10 @@ Control.parse_obj_model = function(obj_txt, model_config){
         var normals = [];
         var texture_coordinates = [];
         var has_texture = false;
-        for (var j = 0; j < 3; j++){
+        var has_normals = true;
+
+        // in a .obj model, verts are expressed in counterclockwise order
+        for (var j = 2; j >= 0; j--){
             var v_i = parsed_obj.i_verts[i + j] * 3; // vertex index
             var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
             var t_i = parsed_obj.i_uvt[i + j] * 2; // texture index
@@ -218,11 +228,15 @@ Control.parse_obj_model = function(obj_txt, model_config){
 
             verts.push(new Vector(x,y,z));
 
-            x = parsed_obj.c_norms[n_i];
-            y = parsed_obj.c_norms[n_i+1];
-            z = parsed_obj.c_norms[n_i+2];
+            if (isNaN(n_i)){
+                has_normals = false;
+            }else{
+                x = parsed_obj.c_norms[n_i];
+                y = parsed_obj.c_norms[n_i+1];
+                z = parsed_obj.c_norms[n_i+2];
 
-            normals.push(new Vector(x,y,z));    
+                normals.push(new Vector(x,y,z));                
+            }
 
             if (!isNaN(t_i)){
                 var u = parsed_obj.c_uvt[t_i];
@@ -235,9 +249,9 @@ Control.parse_obj_model = function(obj_txt, model_config){
         // scale and rotate
         for (var k = 0; k < verts.length; k++){
             verts[k] = Vector.fromArray(math.multiply(verts[k].toArray(),transform_matrix)._data);
-            normals[k] = Vector.fromArray(math.multiply(normals[k].toArray(),rotation_matrix)._data);
+            if (has_normals)
+                normals[k] = Vector.fromArray(math.multiply(normals[k].toArray(),rotation_matrix)._data);
         }   
-
 
         // translate object
         for (var k = 0; k < verts.length; k++){
@@ -250,7 +264,17 @@ Control.parse_obj_model = function(obj_txt, model_config){
         t.has_texture = has_texture;
         t.texture_coordinates = texture_coordinates;
         t.texture_name = model_config.texture;
-        t.plane.setNormal(normals[1]);
+
+        // calculate normal at the baricenter of the triangle
+        if (has_normals){
+            var normal = new Vector(0,0,0);
+            for (var k = 0; k < normals.length; k++){
+                normal.x += normals[k].x / 3;
+                normal.y += normals[k].y / 3;
+                normal.z += normals[k].z / 3;
+            }
+            t.plane.setNormal(normals[1]);            
+        }
 
         Control.model_shapes.push(t);
     }

@@ -168,8 +168,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			let vect_V = v1.subtract(collision).unit();
 			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
 			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), Shape.NPHONG);
-			spec_RVnK_factor = 0;
-
+			
 			let diffuse_color = this.get_diffuse_color(collision);
 
 			ret_color.r += Math.max(0, light_intensity.r * dif_factor * diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
