@@ -16,13 +16,15 @@ function Plane (points,
 	// bruno's implementation:
 	this.normal = (points[0].subtract(points[1])).cross(points[2].subtract(points[1]));
 	// 'd' is calculated by N . P = -d, with p any point in the plane.
-	this.d = - points[0].dot(this.normal);
+	//this.d = - points[0].dot(this.normal);
         // fede's implementation:
         //this.normal = (points[1].subtract(points[0])).cross(points[2].subtract(points[1]));
 	// 'd' is calculated by N . P = -d, with p any point in the plane.
 	//this.d = points[0].dot(this.normal);
 	this.points = points;
 
+	this.calculate_d();
+	
 	this.class_name = 'Plane';
 };
 
@@ -51,3 +53,12 @@ Plane.prototype.collide = function (ray) {
 Plane.prototype.calculate_normal = function(p, normal=null) {
 	return this.normal.unit();
 };
+
+Plane.prototype.calculate_d = function(){
+	this.d = - this.points[0].dot(this.normal);
+}
+
+Plane.prototype.setNormal = function(n){
+	this.normal = n;
+	this.calculate_d();
+}

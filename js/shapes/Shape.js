@@ -85,10 +85,10 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	return new Color(
 		(
 			this.diffuse_reflection_coefficient * light_component.r
-			+ this.specular_coefficient * specular_component.r
-			+ this.transparency * refraction_component.r
-			+ diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
-			+ caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
+			//+ this.specular_coefficient * specular_component.r
+			//+ this.transparency * refraction_component.r
+			//+ diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			//+ caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.g
@@ -99,10 +99,10 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		),
 		(
 			this.diffuse_reflection_coefficient * light_component.b
-			+ this.specular_coefficient * specular_component.b
-			+ this.transparency * refraction_component.b
-			+ diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
-			+ caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
+			//+ this.specular_coefficient * specular_component.b
+			//+ this.transparency * refraction_component.b
+			//+ diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+			//+ caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 		)
 	);
 };
@@ -167,6 +167,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			let vect_V = v1.subtract(collision).unit();
 			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
 			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), Shape.NPHONG);
+			spec_RVnK_factor = 0;
 
 			ret_color.r += Math.max(0, dif_factor * this.diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
 			ret_color.g += Math.max(0, dif_factor * this.diffuse_color.g + spec_RVnK_factor * this.specular_color.g);

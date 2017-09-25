@@ -88,6 +88,15 @@ Control.clickLnkCargarArchivo = function(){
 	document.getElementById('inputCargarArchivo').click();
 }
 
+/* 
+  Parses the configuration file. 
+
+  - Overrides constants
+  - Set's up the scene. 
+  - Triggers model loading.
+
+  When everything's ready, Control.config_loaded is called
+*/
 Control.parse_config = function(txtConfig){
 	var jsonConfig = JSON.parse(txtConfig);
 	this.config = jsonConfig;
@@ -126,10 +135,27 @@ Control.parse_config = function(txtConfig){
 
     this.config.scene.lights = this.config.scene.lights || [];
 
+    // load models
     this.config.scene.models = this.config.scene.models || [];
     this.loaded_models = 0;
     for (var i = 0; i < this.config.scene.models.length; i++){
-        K3D.load(this.config.scene.models[i], Control.parse_obj_model);
+
+        this.config.scene.models[i].transform = this.config.scene.models[i].transform || {};
+        this.config.scene.models[i].transform.translate = this.config.scene.models[i].transform.translate || {};
+        this.config.scene.models[i].transform.translate.x = this.config.scene.models[i].transform.translate.x || 0;
+        this.config.scene.models[i].transform.translate.y = this.config.scene.models[i].transform.translate.y || 0;
+        this.config.scene.models[i].transform.translate.z = this.config.scene.models[i].transform.translate.z || 0;
+        this.config.scene.models[i].transform.rotate.x = this.config.scene.models[i].transform.rotate.x || 0;
+        this.config.scene.models[i].transform.rotate.y = this.config.scene.models[i].transform.rotate.y || 0;
+        this.config.scene.models[i].transform.rotate.z = this.config.scene.models[i].transform.rotate.z || 0;
+        this.config.scene.models[i].transform.scale.x = this.config.scene.models[i].transform.scale.x || 1;
+        this.config.scene.models[i].transform.scale.y = this.config.scene.models[i].transform.scale.y || 1;
+        this.config.scene.models[i].transform.scale.z = this.config.scene.models[i].transform.scale.z || 1;
+        
+        var model_config = Control.config.scene.models[i];
+        K3D.load(this.config.scene.models[i].model, function(obj_txt){
+            Control.parse_obj_model(obj_txt, model_config);
+        });
     }
 
     if (this.config.scene.models.length == 0){
@@ -137,30 +163,81 @@ Control.parse_config = function(txtConfig){
     }
 }
 
-Control.parse_obj_model = function(obj_txt){
+/* 
+    Parses an .obj model and loads it into the scene.
+
+    Applies any transform present in 'model_config' to the loaded mesh. 
+*/
+Control.parse_obj_model = function(obj_txt, model_config){
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
     var color = new Color(200,0,0);
+
+    var rotation = model_config.transform.rotate;
+    rotation.x = rotation.x * Math.PI / 180;
+    rotation.y = rotation.y * Math.PI / 180;
+    rotation.z = rotation.z * Math.PI / 180;
+    
+    // axis rotation matrixes
+    var rotation_x_matrix = math.matrix([
+        [1,0                   ,0],
+        [0,Math.cos(rotation.x),-Math.sin(rotation.x)],
+        [0,Math.sin(rotation.x),Math.cos(rotation.x)]]);
+
+    var rotation_z_matrix = math.matrix([
+        [Math.cos(rotation.z),-Math.sin(rotation.z),0],
+        [Math.sin(rotation.z), Math.cos(rotation.z),0],
+        [0                   ,0                    ,1]]);
+
+    var rotation_y_matrix = math.matrix([
+        [Math.cos(rotation.y), 0,Math.sin(rotation.y)],
+        [0,                    1,0],
+        [-Math.sin(rotation.y),0,Math.cos(rotation.y)]]);
+
+    var scale = model_config.transform.scale;
+    var scale_matrix = math.matrix([[scale.x,0,0],[0,scale.y,0],[0,0,scale.z]]);
+
+    // just rotation
+    var rotation_matrix = math.multiply(math.multiply(rotation_x_matrix, rotation_y_matrix), rotation_z_matrix);
+
+    // rotation + scale
+    var transform_matrix = math.multiply(rotation_matrix, scale_matrix);
+
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
         var verts = [];
         var normals = [];
         for (var j = 0; j < 3; j++){
             var v_i = parsed_obj.i_verts[i + j] * 3; // vertex index
-           // var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
+            var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
 
-            var x = parsed_obj.c_verts[v_i] * 0.1;
-            var y = parsed_obj.c_verts[v_i+1] * 0.1;
-            var z = parsed_obj.c_verts[v_i+2] * 0.1 ;
+            var x = parsed_obj.c_verts[v_i];
+            var y = parsed_obj.c_verts[v_i+1];
+            var z = parsed_obj.c_verts[v_i+2];
 
             verts.push(new Vector(x,y,z));
 
-           // x = parsed_obj.c_norms[n_i];
-           // y = parsed_obj.c_norms[n_i+1];
-          //  z = parsed_obj.c_norms[n_i+2];
+            x = parsed_obj.c_norms[n_i];
+            y = parsed_obj.c_norms[n_i+1];
+            z = parsed_obj.c_norms[n_i+2];
 
-          //  normals.push(new Vector(x,y,z));
+            normals.push(new Vector(x,y,z));
         }
+
+        // scale and rotate
+        for (var k = 0; k < verts.length; k++){
+            verts[k] = Vector.fromArray(math.multiply(verts[k].toArray(),transform_matrix)._data);
+            normals[k] = Vector.fromArray(math.multiply(normals[k].toArray(),rotation_matrix)._data);
+        }   
+
+
+        // translate object
+        for (var k = 0; k < verts.length; k++){
+            verts[k].x += model_config.transform.translate.x;
+            verts[k].y += model_config.transform.translate.y;
+            verts[k].z += model_config.transform.translate.z;
+        }   
+
         var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
-        //t.plane.normal = normals[0].multiply(-1);
+        t.plane.setNormal(normals[1]);
 
         Control.model_shapes.push(t);
     }
@@ -169,6 +246,8 @@ Control.parse_obj_model = function(obj_txt){
     if (Control.loaded_models == Control.config.scene.models.length){
         Control.config_loaded();
     }
+
+    Control.parsed_obj = parsed_obj;
 }
 
 Control.eraseCanvas = function(){
