@@ -94,7 +94,20 @@ Control.parse_config = function(txtConfig){
 
     // set default values
     this.config.resolution = this.config.resolution || {};
-    this.config.photon_count = this.config.photon_count || 10000;
+    this.config.global_map_photon_count = this.config.photon_count || 10000;
+    this.config.photon_max_bounce = this.config.photon_max_bounce || 4;
+    this.config.nearby_photons_proportion = this.config.nearby_photons_proportion || 0.0001;
+    this.config.nearby_photons_fixed_quantity = this.config.nearby_photons_fixed_quantity || 5;
+    this.config.nearby_photons_per_point_type = this.config.nearby_photons_per_point_type || 'proportional';
+    this.config.diffuse_photon_scale_factor = this.config.diffuse_photon_scale_factor || 1;
+    this.config.caustic_photon_scale_factor = this.config.caustic_photon_scale_factor || 1;
+    PhotonMapping.MAX_PHOTON_BOUNCE = this.config.photon_max_bounce;
+    PhotonMapping.PHOTON_PROPORTION = this.config.nearby_photons_proportion;
+    PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = this.config.nearby_photons_fixed_quantity;
+    PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = this.config.nearby_photons_per_point_type;
+
+    Shape.DIFFUSE_PHOTON_SCALE_FACTOR = this.config.diffuse_photon_scale_factor;
+    Shape.CAUSTIC_PHOTON_SCALE_FACTOR = this.config.caustic_photon_scale_factor;
 
     this.config.scene = this.config.scene || {};
     this.config.scene.models = this.config.scene.models || [];
@@ -129,21 +142,27 @@ Control.parse_obj_model = function(obj_txt){
     var color = new Color(200,0,0);
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
         var verts = [];
+        var normals = [];
         for (var j = 0; j < 3; j++){
-            var v_i = parsed_obj.i_verts[i + j]; // vertex index
+            var v_i = parsed_obj.i_verts[i + j] * 3; // vertex index
+           // var n_i = parsed_obj.i_norms[i + j] * 3; // normal index
 
-            var x = parsed_obj.c_verts[v_i];
-            var y = parsed_obj.c_verts[v_i+1];
-            var z = parsed_obj.c_verts[v_i+2];
+            var x = parsed_obj.c_verts[v_i] * 0.1;
+            var y = parsed_obj.c_verts[v_i+1] * 0.1;
+            var z = parsed_obj.c_verts[v_i+2] * 0.1 ;
 
             verts.push(new Vector(x,y,z));
+
+           // x = parsed_obj.c_norms[n_i];
+           // y = parsed_obj.c_norms[n_i+1];
+          //  z = parsed_obj.c_norms[n_i+2];
+
+          //  normals.push(new Vector(x,y,z));
         }
         var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
-        Control.model_shapes.push(t);
+        //t.plane.normal = normals[0].multiply(-1);
 
-        if (Control.model_shapes.length > 100){
-            break;
-        }
+        Control.model_shapes.push(t);
     }
 
     Control.loaded_models++;
@@ -386,25 +405,12 @@ Control.startPhotonMapping = function(){
 
 	if (ok){
 		// this.photonMapping = new PhotonMapping(this.config.photon_count, 1000);
-		this.photonMapping = new PhotonMapping(1000, 1000);
+		this.photonMapping = new PhotonMapping(this.config.global_map_photon_count, this.config.caustic_map_photon_count);
         this.photonMapping.generatePhotons(PhotonMapEnum.GLOBAL, this.scene);
         console.log('finished generating global photons!')
         this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
         console.log('finished generating caustic photons!')
         this.generatePhotonImage(PhotonMapEnum.CAUSTIC);
-        
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        async function demo() {
-            console.log('Taking a break...');
-            await sleep(2000);
-            console.log('Two second later');
-        }
-
-        demo();
-        this.generatePhotonImage(PhotonMapEnum.GLOBAL);
 	}
 }
 

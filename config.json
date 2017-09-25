@@ -3,14 +3,14 @@
 		"x" : 1200,
 		"y" : 500
 	},
-	"photon_count" : 20000,
-	"photon_max_bounce" : 4,
-	"photon_mapping" : {
-		"nearby_photons_per_point_type"  : "fixed",
-		"nearby_photons_per_point_count" : 10,
-		"nearby_photons_per_point_proportion" : 0.0001,
-		"diffuse_photon_scale_factor" : 10
-	},
+	"global_map_photon_count" : 20000,
+	"caustic_map_photon_count" : 1000,
+	"photon_max_bounce" : 5,
+	"nearby_photons_per_point_type"  : "proportional",
+	"nearby_photons_fixed_quantity" : 15,
+	"nearby_photons_proportion" : 0.001,
+	"diffuse_photon_scale_factor" : 1,
+	"caustic_photon_scale_factor" : 2,
 	"scene" : {
 		"models" : [],
 		"shapes" : [
@@ -80,8 +80,8 @@
 			}
 		],
 		"lights" : [
-			{ "type" : "point", "position" : {"x" : 10, "y" : 18, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100},
-			{ "type" : "point", "position" : {"x" : 10.3, "y" : 18, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100}
+			{ "type" : "point", "position" : {"x" : 15, "y" : 28, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : 15.3, "y" : 28, "z" : 10}, "color" : { "r" : 128, "g" : 128, "b": 128}, "power" : 100}
 		],
 		"camera" : {"x" : 0, "y" : 0, "z" : 0},
 		"viewport": {

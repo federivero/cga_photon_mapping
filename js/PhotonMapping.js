@@ -21,9 +21,10 @@ PhotonMapping = function(globalPhotonCount, causticPhotonCount){
 	}
 }
 
-PhotonMapping.MAX_PHOTON_BOUNCE = 4;
-PhotonMapping.PHOTON_PROPORTION = 0.001;
-
+PhotonMapping.MAX_PHOTON_BOUNCE = 4; // overriden by config
+PhotonMapping.PHOTON_PROPORTION = 0.001; // overriden by config 
+PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = "fixed"; // overriden by config. Options: "fixed", "proportional"
+PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 5; // overriden by config
 
 PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 	let photonMap = this.get_map(map_type);
@@ -213,17 +214,20 @@ PhotonMapping.prototype.get_map = function(map_type){
 /*
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
-PhotonMapping.prototype.get_photons = function(map_type, position, quantity, shape=null){
+PhotonMapping.prototype.get_photons = function(map_type, position, shape=null){
 	let photon_map = this.get_map(map_type);
-	// photons as a proportion
-	// let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
-	// photons as quantity
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), quantity);
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
 	return nearest_indexes.filter(i => (shape == null) || (photon_map.photons[i].shape == shape)).map(i => photon_map.photons[i]);
 }
 
 PhotonMapping.prototype.photon_count_per_point = function(map_type){
 	let photon_map = this.get_map(map_type);
-	return Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length);
-	//return nearby_photon_qty;
+	let photon_count = 0;
+	if (PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE == "fixed"){
+		// photons as fixed quantity
+		photon_count = PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY;
+	}else if (PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE == "proportional"){
+		photon_count = Math.floor(PhotonMapping.PHOTON_PROPORTION * photon_map.photons.length);
+	}
+	return photon_count;
 }
