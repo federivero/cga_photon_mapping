@@ -71,7 +71,7 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	} else {
 		diffuse_reflection_component = new Color();
 	}
-	caustic_component = this.calculate_photons_color(PhotonMapEnum.CAUSTIC, collision, max_caustic_photon_distance);
+	caustic_component = this.calculate_photons_color(PhotonMapEnum.CAUSTIC, collision, Infinity);
 	// this is for seeing only the refraction component
 	// return new Color(
 	// 	(
@@ -328,16 +328,23 @@ Shape.prototype.calculate_photons_color = function(map_type, collision,  max_dis
 	let c = new Color();
 	let photon_color = new Color();
 
-	let power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
-
+	let power_compensation = 1
+	if (this.should_filter_photons_by_shape() && max_distance === Infinity) {
+		power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
+	}
+	
 	photons = photons.map(photon => {
-		return {
+		ret =  {
 			photon: photon,
 			distance: collision.distanceTo(photon.position)
 		}
+		if (ret.distance > 1) {
+			console.log(photon, this, ret.distance)
+		}
+		return ret
 	});
 	// filter by distance
-	// if (distance_filter === true) {
+	// if (max_distance < Infinity) {
 		// photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
 	// }
 
