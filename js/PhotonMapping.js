@@ -218,9 +218,9 @@ PhotonMapping.prototype.get_map = function(map_type){
 /*
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
-PhotonMapping.prototype.get_photons = function(map_type, position, shape=null){
+PhotonMapping.prototype.get_photons = function(map_type, position, shape=null, max_distance=Infinity){
 	let photon_map = this.get_map(map_type);
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type), max_distance);
 	return nearest_indexes.filter(i => (shape == null) || (photon_map.photons[i].shape == shape)).map(i => photon_map.photons[i]);
 }
 

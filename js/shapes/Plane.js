@@ -62,3 +62,7 @@ Plane.prototype.setNormal = function(n){
 	this.normal = n;
 	this.calculate_d();
 }
+
+Plane.prototype.should_filter_photons_by_shape = function() {
+	return true;
+};

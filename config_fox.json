@@ -1,0 +1,38 @@
+{
+	"resolution" : {
+		"x" : 1200,
+		"y" : 500
+	},
+	"global_map_photon_count" : 20000,
+	"caustic_map_photon_count" : 0,
+	"photon_max_bounce" : 5,
+	"nearby_photons_per_point_type"  : "proportional",
+	"nearby_photons_fixed_quantity" : 15,
+	"nearby_photons_proportion" : 0.001,
+	"diffuse_photon_scale_factor" : 1,
+	"caustic_photon_scale_factor" : 2,
+	"scene" : {
+		"models" : [
+			{"model":"models/fox.obj", "texture" : "models/fox_texture.png", "transform" : 
+				{ "translate" : { "x": 0, "y" : -6, "z" : 0},
+				  "rotate"	  : { "x": 0, "y" : 70, "z" : 0},
+				  "scale"	  : { "x": 0.1, "y" : 0.1, "z" : 0.1}
+				}
+			}],
+		"shapes" : [],
+		"lights" : [
+			{ "type" : "point", "position" : {"x" : 15, "y" : 28, "z" : 10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : -15, "y" : 28, "z" : 10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : 15, "y" : 28, "z" : -10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : -15, "y" : 28, "z" : -10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : -10, "y" : -10, "z" : -10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100},
+			{ "type" : "point", "position" : {"x" : 10, "y" : -10, "z" : 10}, "color" : { "r" : 255, "g" : 255, "b": 255}, "power" : 100}
+		],
+		"camera" : {"x" : 0, "y" : 0, "z" : 25},
+		"viewport": {
+			"center" : {"x" : 0, "y" : 0, "z" : 15},
+			"width" : 12,
+			"height" : 8
+		}
+	}
+}

@@ -161,3 +161,8 @@ Triangle.prototype.get_diffuse_color = function(p){
 		return this.diffuse_color;
 	}
 }
+
+Triangle.prototype.should_filter_photons_by_shape = function() {
+	// avoid the super illumination of some triangles in models
+	return false;
+};

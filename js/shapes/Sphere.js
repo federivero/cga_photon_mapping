@@ -72,3 +72,7 @@ Sphere.prototype.calculate_normal = function(p, normal=null) {
 	normal.z = (p.z - this.center.z) / this.radius;
 	return normal;
 };
+
+Sphere.prototype.should_filter_photons_by_shape = function() {
+	return true;
+};

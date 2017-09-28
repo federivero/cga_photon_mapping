@@ -67,11 +67,11 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		}
 	}
 	if (!this.is_mirror) {
-		diffuse_reflection_component = this.calculate_photons_color(PhotonMapEnum.GLOBAL, collision, false);
+		diffuse_reflection_component = this.calculate_photons_color(PhotonMapEnum.GLOBAL, collision, Infinity);
 	} else {
 		diffuse_reflection_component = new Color();
 	}
-	caustic_component = this.calculate_photons_color(PhotonMapEnum.CAUSTIC, collision, true);
+	caustic_component = this.calculate_photons_color(PhotonMapEnum.CAUSTIC, collision, max_caustic_photon_distance);
 	// this is for seeing only the refraction component
 	// return new Color(
 	// 	(
@@ -310,33 +310,20 @@ Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
 	)
 }
 
-Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, depth, refraction_coefficient) {
-	// first get the nearby photons
-	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, this);
-	// then, integrate
-	let c = new Color();
-	let photon_color = new Color();
-
-	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.GLOBAL) / photons.length;
-
-	for (let i = 0, leni = photons.length; i < leni; ++i){
-		let photon = photons[i];
-		// TODO: maybe save the calculated color instead of the entry color?
-		// do we use the entry color at all?
-		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
-		c.r += photon_color.r * photon.power * power_compensation;
-		c.g += photon_color.g * photon.power * power_compensation;
-		c.b += photon_color.b * photon.power * power_compensation;
-	}
-	c.r = Math.min(c.r, 255);
-	c.g = Math.min(c.g, 255);
-	c.b = Math.min(c.b, 255);
-	return c;
+Shape.prototype.should_filter_photons_by_shape = function() {
+	// abstract
+	throw new Error('Shape does not implement this!');
 }
 
-Shape.prototype.calculate_photons_color = function(map_type, collision, distance_filter=false){
+Shape.prototype.calculate_photons_color = function(map_type, collision,  max_distance=Infinity){
 	// first get the nearby photons
-	let photons = Control.photonMapping.get_photons(map_type, collision, this);
+	let photons;
+	if (this.should_filter_photons_by_shape()) {
+		photons = Control.photonMapping.get_photons(map_type, collision, this, max_distance);
+	} else {
+		photons = Control.photonMapping.get_photons(map_type, collision, null, max_distance);
+	}
+	
 	// then, integrate
 	let c = new Color();
 	let photon_color = new Color();
@@ -350,9 +337,9 @@ Shape.prototype.calculate_photons_color = function(map_type, collision, distance
 		}
 	});
 	// filter by distance
-	if (distance_filter === true) {
-		photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
-	}
+	// if (distance_filter === true) {
+		// photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
+	// }
 
 	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, photons.map(photon => photon.distance)), 2))
 
