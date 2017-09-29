@@ -43,11 +43,14 @@ Control.start_photon_mapping = function(){
     this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
     Control.startPhotonMapping();
-    Control.rayTrace();
-    Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
-    this.ready_for_input = true;
-    $.notify("Finished", "info");
+    // is this what you call callback hell?
+    Control.rayTrace(function() {
+        Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
+        this.ready_for_input = true;
+        $.notify("Finished", "info");
+    })
 }
+
 
 Control.tests = function(){
     console.log(Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, new Vector(0,1,0)));
@@ -552,9 +555,9 @@ Control.adaptCanvasAspectRatio = function(viewport){
     }
 }
 
-Control.rayTrace = function() {
+Control.rayTrace = function(after_trace) {
 
-    let img = context.getImageData(0, 0, canvas.width, canvas.height);
+    var img = context.getImageData(0, 0, canvas.width, canvas.height);
 
 	let pixel_size = {
 		width: Control.scene.viewport.width / canvas.width,
@@ -579,26 +582,49 @@ Control.rayTrace = function() {
 	}
 
     let v1 = Control.scene.camera;
-	for (let row = 0; row < canvas.height; ++row) {
-		for (let col = 0; col < canvas.width; ++col) {
-			let current_pos = (row*canvas.width + col) * 4;
-            let v2 = pixels[row*canvas.width + col];
-            let trace_result = Control.scene.trace(v1, v2);
-            if (trace_result.found === true) {
-				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
-                img.data[current_pos] = color.r;
-                img.data[current_pos + 1] = color.g;
-                img.data[current_pos + 2] = color.b;
-                img.data[current_pos + 3] = 255;
+
+    const rows_per_draw = 1;
+    // awful way of keeping track of state
+    let row = 0;
+    function animatedTrace() {
+        for(;;){
+    		for (let col = 0; col < canvas.width; ++col) {
+    			let current_pos = (row*canvas.width + col) * 4;
+                let v2 = pixels[row*canvas.width + col];
+                let trace_result = Control.scene.trace(v1, v2);
+                if (trace_result.found === true) {
+    				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
+                    img.data[current_pos] = color.r;
+                    img.data[current_pos + 1] = color.g;
+                    img.data[current_pos + 2] = color.b;
+                    img.data[current_pos + 3] = 255;
+                } else {
+    				img.data[current_pos] = Control.scene.background_color.r;
+    				img.data[current_pos + 1] = Control.scene.background_color.g;
+    				img.data[current_pos + 2] = Control.scene.background_color.b;
+    				img.data[current_pos + 3] = 255;
+    			}
+    		}
+            // hey I know it's a mess ok?
+            if (++row < canvas.height) {
+                if (row % rows_per_draw == 0) {
+                    createImageBitmap(img)
+                        .then(response => {
+                            context.drawImage(response,0,0);
+                            window.requestAnimationFrame(animatedTrace);
+                        })
+                    break;
+                } else {
+                    continue;
+                }
             } else {
-				img.data[current_pos] = Control.scene.background_color.r;
-				img.data[current_pos + 1] = Control.scene.background_color.g;
-				img.data[current_pos + 2] = Control.scene.background_color.b;
-				img.data[current_pos + 3] = 255;
-			}
-		}
-	}
-	context.putImageData(img, 0, 0);
+                context.putImageData(img, 0, 0);
+                // absolutely disgusting hack because I don't know how to do promises
+                return after_trace();
+            }
+        }
+    }
+    animatedTrace();
 }
 
 Control.controlarPrecondiciones = function(){

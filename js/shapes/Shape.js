@@ -323,7 +323,7 @@ Shape.prototype.calculate_photons_color = function(map_type, collision,  max_dis
 	} else {
 		photons = Control.photonMapping.get_photons(map_type, collision, null, max_distance);
 	}
-	
+
 	// then, integrate
 	let c = new Color();
 	let photon_color = new Color();
@@ -332,16 +332,12 @@ Shape.prototype.calculate_photons_color = function(map_type, collision,  max_dis
 	if (this.should_filter_photons_by_shape() && max_distance === Infinity) {
 		power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
 	}
-	
+
 	photons = photons.map(photon => {
-		ret =  {
+		return {
 			photon: photon,
 			distance: collision.distanceTo(photon.position)
 		}
-		if (ret.distance > 1) {
-			console.log(photon, this, ret.distance)
-		}
-		return ret
 	});
 	// filter by distance
 	// if (max_distance < Infinity) {
