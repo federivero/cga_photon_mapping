@@ -24,7 +24,7 @@ PhotonMapping = function(globalPhotonCount, causticPhotonCount){
 PhotonMapping.MAX_PHOTON_BOUNCE = 4; // overriden by config
 PhotonMapping.PHOTON_PROPORTION = 0.001; // overriden by config
 PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = "fixed"; // overriden by config. Options: "fixed", "proportional"
-PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 50; // overriden by config
+PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 1000; // overriden by config
 
 PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 	let photonMap = this.get_map(map_type);
@@ -90,20 +90,22 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 						// set vector_start, vector_end, current_color for the next step
 						vector_start = collision;
 						vector_end = shape.diffuse_reflection_direction(collision, refraction_coefficient, vector_end);
-						current_color = shape.calculate_diffuse_photon_color(current_color);
+						current_color = shape.calculate_diffuse_photon_color(current_color, collision);
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
-						{
+						if (map_type === PhotonMapEnum.CAUSTIC) {
 							let reflection_direction = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
 							Vector.add(collision, reflection_direction, vector_end);
 							vector_start = collision;
 							// TODO: allow for colored mirrors
 							current_color = current_color;
+						} else if (map_type === PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
 						}
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
-						{
+						if (map_type === PhotonMapEnum.CAUSTIC) {
 							let refraction_result =  shape.refraction_direction(collision, vector_start, refraction_coefficient, vector_end);
 							refraction_coefficient = refraction_result.opposite_refraction_coefficient;
 							// same as in calculate_refraction_color
@@ -119,6 +121,8 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 							shape = null;
 							// TODO: allow for colored glass
 							current_color = current_color;
+						} else if (map_type === PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
 						}
 					} else {
 						// absorption

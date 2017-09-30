@@ -24,7 +24,7 @@ function Plane (points,
 	this.points = points;
 
 	this.calculate_d();
-	
+
 	this.class_name = 'Plane';
 };
 

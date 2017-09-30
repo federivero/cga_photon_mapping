@@ -46,8 +46,26 @@ Shape.prototype.calculate_normal = function(p, normal=null) {
 // 'refraction_coefficient' is the refraction coefficient of the material from where the ray is coming from
 // by default it's the air
 Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_coefficient=Control.scene.air_refraction_coefficient) {
+	// let diffuse_reflection_component = this.calculate_photons_color(PhotonMapEnum.GLOBAL, collision, Infinity);
+	// // this is for seeing only the refraction component
+	// return new Color(
+	// 	(
+	// 		diffuse_reflection_component.r * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+	// 	),
+	// 	(
+	// 		diffuse_reflection_component.g * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+	// 	),
+	// 	(
+	// 		diffuse_reflection_component.b * Shape.DIFFUSE_PHOTON_SCALE_FACTOR
+	// 	)
+	// );
 	// Calculate light color
 	let light_component = this.calculate_light_color(collision, v1, v2);
+	// return new Color(
+	// 	this.diffuse_reflection_coefficient * light_component.r,
+	// 	this.diffuse_reflection_coefficient * light_component.g,
+	// 	this.diffuse_reflection_coefficient * light_component.b
+	// )
 	let specular_component, refraction_component, diffuse_reflection_component, caustic_component;
 	if (depth > 0) {
 		// is_mirror distinguishes between a reflective surface and one that is merely shiny
@@ -109,17 +127,18 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 	);
 };
 
-// Calculate the color of a diffuse reflected photon
+// Calculate the color of a diffuse reflected photon in position p
 // If ret is provided then it is used for the return result
-Shape.prototype.calculate_diffuse_photon_color = function(incoming_color, ret=null) {
+Shape.prototype.calculate_diffuse_photon_color = function(incoming_color, p, ret=null) {
 	if (ret === null) {
 		ret = new Color();
 	}
 	// Actually, divide both by 255 (to get a number between 0 and 1)
 	// And then multiply by 255 (to get a color)
-	ret.r = (this.diffuse_color.r) * (incoming_color.r / 255) / this.diffuse_reflection_coefficient;
-	ret.g = (this.diffuse_color.g) * (incoming_color.g / 255) / this.diffuse_reflection_coefficient;
-	ret.b = (this.diffuse_color.b) * (incoming_color.b / 255) / this.diffuse_reflection_coefficient;
+	let diffuse_color = this.get_diffuse_color(p)
+	ret.r = (diffuse_color.r) * (incoming_color.r / 255) / this.diffuse_reflection_coefficient;
+	ret.g = (diffuse_color.g) * (incoming_color.g / 255) / this.diffuse_reflection_coefficient;
+	ret.b = (diffuse_color.b) * (incoming_color.b / 255) / this.diffuse_reflection_coefficient;
 	return ret;
 };
 
@@ -310,6 +329,10 @@ Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
 	)
 }
 
+Shape.prototype.cone_filter = function(distance, farthest_photon_distance, k) {
+	return 1 - (distance / (k * farthest_photon_distance));
+}
+
 Shape.prototype.should_filter_photons_by_shape = function() {
 	// abstract
 	throw new Error('Shape does not implement this!');
@@ -329,9 +352,9 @@ Shape.prototype.calculate_photons_color = function(map_type, collision,  max_dis
 	let photon_color = new Color();
 
 	let power_compensation = 1
-	if (this.should_filter_photons_by_shape() && max_distance === Infinity) {
-		power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
-	}
+	// if (this.should_filter_photons_by_shape() && max_distance === Infinity) {
+	// 	power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
+	// }
 
 	photons = photons.map(photon => {
 		return {
@@ -339,24 +362,38 @@ Shape.prototype.calculate_photons_color = function(map_type, collision,  max_dis
 			distance: collision.distanceTo(photon.position)
 		}
 	});
-	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, photons.map(photon => photon.distance)), 2))
-
+	let farthest_photon_distance = Math.max.apply(null, photons.map(photon => photon.distance));
+	// let computed_max_distance = (2 * Math.pow(farthest_photon_distance, 2))
+	// cone filter constant
+	let k = 1;
 	for (let i = 0, leni = photons.length; i < leni; ++i){
 		let photon = photons[i].photon;
 		let distance = photons[i].distance;
 		// TODO: maybe save the calculated color instead of the entry color?
 		// do we use the entry color at all?
-		photon_color = this.calculate_diffuse_photon_color(photon.color, photon_color);
-		// photon_color = photon.color;
-		let filter = this.gaussian_filter(distance, computed_max_distance);
-		filter = 1;
+		photon_color = this.calculate_diffuse_photon_color(photon.color, photon.position, photon_color);
+		let filter = 1;
+		if (map_type === PhotonMapEnum.CAUSTIC) {
+			// filter = this.gaussian_filter(distance, computed_max_distance);
+			filter = this.cone_filter(distance, farthest_photon_distance, k);
+		}
 		c.r += photon_color.r * photon.power * filter * power_compensation;
 		c.g += photon_color.g * photon.power * filter * power_compensation;
 		c.b += photon_color.b * photon.power * filter * power_compensation;
 	}
-	c.r = Math.min(c.r, 255);
-	c.g = Math.min(c.g, 255);
-	c.b = Math.min(c.b, 255);
+
+	if (map_type === PhotonMapEnum.GLOBAL) {
+		c.r = c.r / (Math.PI * Math.pow(farthest_photon_distance, 2));
+		c.g = c.g / (Math.PI * Math.pow(farthest_photon_distance, 2));
+		c.b = c.b / (Math.PI * Math.pow(farthest_photon_distance, 2));
+	} else if (map_type === PhotonMapEnum.CAUSTIC) {
+		c.r = c.r / ( (1 - (2/(3*k))) * Math.PI*Math.pow(farthest_photon_distance, 2));
+		c.g = c.g / ( (1 - (2/(3*k))) * Math.PI*Math.pow(farthest_photon_distance, 2));
+		c.b = c.b / ( (1 - (2/(3*k))) * Math.PI*Math.pow(farthest_photon_distance, 2));
+	}
+	// c.r = Math.min(c.r, 255);
+	// c.g = Math.min(c.g, 255);
+	// c.b = Math.min(c.b, 255);
 	return c;
 
 }
