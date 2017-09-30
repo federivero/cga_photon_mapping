@@ -42,7 +42,9 @@ Control.start_photon_mapping = function(){
     // adjust canvas aspect ratio to match viewport's
     this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
+    console.log('starting photon mapping');
     Control.startPhotonMapping();
+    console.log('starting trace');
     // is this what you call callback hell?
     Control.rayTrace(function() {
         Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
