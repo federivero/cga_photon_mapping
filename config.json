@@ -3,8 +3,8 @@
 		"x" : 1200,
 		"y" : 500
 	},
-	"global_map_photon_count" : 20000,
-	"caustic_map_photon_count" : 0,
+	"global_map_photon_count" : 5000,
+	"caustic_map_photon_count" : 5000,
 	"photon_max_bounce" : 5,
 	"nearby_photons_per_point_type"  : "proportional",
 	"nearby_photons_fixed_quantity" : 15,

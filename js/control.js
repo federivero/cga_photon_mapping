@@ -88,11 +88,11 @@ Control.clickLnkCargarArchivo = function(){
 	document.getElementById('inputCargarArchivo').click();
 }
 
-/* 
-  Parses the configuration file. 
+/*
+  Parses the configuration file.
 
   - Overrides constants
-  - Set's up the scene. 
+  - Set's up the scene.
   - Triggers model loading.
 
   When everything's ready, Control.config_loaded is called
@@ -158,7 +158,7 @@ Control.parse_config = function(txtConfig){
         this.config.scene.models[i].color.r = this.config.scene.models[i].color.r || 200; // default color light red
         this.config.scene.models[i].color.g = this.config.scene.models[i].color.g || 0;
         this.config.scene.models[i].color.b = this.config.scene.models[i].color.b || 0;
-        
+
         var model_config = Control.config.scene.models[i];
         K3D.load(this.config.scene.models[i].model, function(obj_txt){
             Control.parse_obj_model(obj_txt, model_config);
@@ -170,10 +170,10 @@ Control.parse_config = function(txtConfig){
     }
 }
 
-/* 
+/*
     Parses an .obj model and loads it into the scene.
 
-    Applies any transform present in 'model_config' to the loaded mesh. 
+    Applies any transform present in 'model_config' to the loaded mesh.
 */
 Control.parse_obj_model = function(obj_txt, model_config){
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
@@ -183,7 +183,7 @@ Control.parse_obj_model = function(obj_txt, model_config){
     rotation.x = rotation.x * Math.PI / 180;
     rotation.y = rotation.y * Math.PI / 180;
     rotation.z = rotation.z * Math.PI / 180;
-    
+
     // axis rotation matrixes
     var rotation_x_matrix = math.matrix([
         [1,0                   ,0],
@@ -252,13 +252,12 @@ Control.parse_obj_model = function(obj_txt, model_config){
             if (has_normals)
                 normals[k] = Vector.fromArray(math.multiply(normals[k].toArray(),rotation_matrix)._data);
         }   
-
         // translate object
         for (var k = 0; k < verts.length; k++){
             verts[k].x += model_config.transform.translate.x;
             verts[k].y += model_config.transform.translate.y;
             verts[k].z += model_config.transform.translate.z;
-        }   
+        }
 
         var t = new Triangle(verts, null, color, 1, color, false, 0, 0);
         t.has_texture = has_texture;
@@ -290,14 +289,14 @@ Control.parse_obj_model = function(obj_txt, model_config){
             texture_canvas.height = img.naturalHeight;
             texture_context.drawImage(img, 0, 0);
             var texture_pixels = texture_context.getImageData(0, 0, texture_canvas.width, texture_canvas.height).data;
-            
+
             Control.textures[model_config.texture] = { width: texture_canvas.width, height: texture_canvas.height, pixels : texture_pixels};
             Control.loaded_models++;
             if (Control.loaded_models == Control.config.scene.models.length){
                 Control.config_loaded();
             }
         }
-    }else{    
+    }else{
         Control.loaded_models++;
         if (Control.loaded_models == Control.config.scene.models.length){
             Control.config_loaded();
@@ -546,20 +545,20 @@ Control.startPhotonMapping = function(){
         //console.log('finished generating global photons!')
         this.photonMapping.generatePhotons(PhotonMapEnum.CAUSTIC, this.scene);
         //console.log('finished generating caustic photons!')
-        
+
         // generate image with the global photon map
         this.generatePhotonImage(PhotonMapEnum.GLOBAL, true);
         Control.captureCanvas(ImageTypeEnum.PHOTON_GLOBAL_MAP);
-        
+
         // generate image with the caustic photon map
         this.generatePhotonImage(PhotonMapEnum.CAUSTIC, true);
         Control.captureCanvas(ImageTypeEnum.PHOTON_CAUSTIC_MAP);
-        
+
         // generate image with both photon maps
         this.generatePhotonImage(PhotonMapEnum.GLOBAL, true);
         this.generatePhotonImage(PhotonMapEnum.CAUSTIC, false);
         Control.captureCanvas(ImageTypeEnum.PHOTON_MULTIMAP);
-        
+
 	}
 }
 

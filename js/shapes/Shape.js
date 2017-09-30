@@ -67,21 +67,21 @@ Shape.prototype.calculate_color = function(collision, v1, v2, depth, refraction_
 		}
 	}
 	if (!this.is_mirror) {
-		diffuse_reflection_component = this.calculate_diffuse_photons_color(collision, v1, v2, depth-1, refraction_coefficient);
+		diffuse_reflection_component = this.calculate_photons_color(PhotonMapEnum.GLOBAL, collision, false);
 	} else {
 		diffuse_reflection_component = new Color();
 	}
-	caustic_component = this.calculate_caustic_photons_color(collision, v1, v2, depth-1, refraction_coefficient);
+	caustic_component = this.calculate_photons_color(PhotonMapEnum.CAUSTIC, collision, true);
 	// this is for seeing only the refraction component
 	// return new Color(
 	// 	(
-	// 		caustic_component.r * caustic_photon_scale_factor
+	// 		caustic_component.r * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 	// 	),
 	// 	(
-	// 		caustic_component.g * caustic_photon_scale_factor
+	// 		caustic_component.g * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 	// 	),
 	// 	(
-	// 		caustic_component.b * caustic_photon_scale_factor
+	// 		caustic_component.b * Shape.CAUSTIC_PHOTON_SCALE_FACTOR
 	// 	)
 	// );
 	return new Color(
@@ -168,7 +168,7 @@ Shape.prototype.calculate_light_color = function(collision, v1, v2) {
 			let vect_V = v1.subtract(collision).unit();
 			let vect_R = normal.multiply(2 * normal.dot(light_direction)).subtract(light_direction);
 			let spec_RVnK_factor = this.specular_coefficient * Math.pow(vect_V.dot(vect_R), Shape.NPHONG);
-			
+
 			let diffuse_color = this.get_diffuse_color(collision);
 
 			ret_color.r += Math.max(0, light_intensity.r * dif_factor * diffuse_color.r + spec_RVnK_factor * this.specular_color.r);
@@ -301,6 +301,15 @@ Shape.prototype.calculate_refraction_color = function(collision, v1, v2, depth, 
 	}
 }
 
+
+Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
+	// Page 33 of the book Siggraph 2002 - Course 43 - A Practical Guide To Global Illumination Using Photon Mapping
+	// computed_max_distance is max_distance squared times 2
+	return (
+		0.918 * (1 - ((1 - Math.pow(Math.E, (-1.953 * (Math.pow(distance, 2) / computed_max_distance)))) / 0.8581521110346773))
+	)
+}
+
 Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, depth, refraction_coefficient) {
 	// first get the nearby photons
 	let photons = Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, collision, this);
@@ -325,22 +334,14 @@ Shape.prototype.calculate_diffuse_photons_color = function(collision, v1, v2, de
 	return c;
 }
 
-Shape.prototype.gaussian_filter = function(distance, computed_max_distance) {
-	// Page 33 of the book Siggraph 2002 - Course 43 - A Practical Guide To Global Illumination Using Photon Mapping
-	// computed_max_distance is max_distance squared times 2
-	return (
-		0.918 * (1 - ((1 - Math.pow(Math.E, (-1.953 * (Math.pow(distance, 2) / computed_max_distance)))) / 0.8581521110346773))
-	)
-}
-
-Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, depth, refraction_coefficient){
+Shape.prototype.calculate_photons_color = function(map_type, collision, distance_filter=false){
 	// first get the nearby photons
-	let photons = Control.photonMapping.get_photons(PhotonMapEnum.CAUSTIC, collision, this);
+	let photons = Control.photonMapping.get_photons(map_type, collision, this);
 	// then, integrate
 	let c = new Color();
 	let photon_color = new Color();
 
-	let power_compensation = Control.photonMapping.photon_count_per_point(PhotonMapEnum.CAUSTIC) / photons.length;
+	let power_compensation = Control.photonMapping.photon_count_per_point(map_type) / photons.length;
 
 	photons = photons.map(photon => {
 		return {
@@ -349,7 +350,9 @@ Shape.prototype.calculate_caustic_photons_color = function(collision, v1, v2, de
 		}
 	});
 	// filter by distance
-	photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
+	if (distance_filter === true) {
+		photons = photons.filter(photon => photon.distance < max_caustic_photon_distance);
+	}
 
 	let computed_max_distance = (2 * Math.pow(Math.max.apply(null, photons.map(photon => photon.distance)), 2))
 
