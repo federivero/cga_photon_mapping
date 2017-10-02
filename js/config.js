@@ -1,4 +1,4 @@
-{
+var default_config = {
 	"resolution" : {
 		"x" : 800,
 		"y" : 600
@@ -133,4 +133,4 @@
 			"height" : 8
 		}
 	}
-}
+};

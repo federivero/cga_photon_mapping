@@ -13,9 +13,16 @@ Control.initialize = function(){
     Control.initializeFileUpload();
 
 
-    Control.load_default_configuration(this.config_loaded);
+    // load configuration JSON file and start immediately
+    //Control.load_default_configuration(this.config_loaded);
 
-    //Control.tests();
+    // load default config and wait for 'start' button
+    Control.parse_config(default_config, true, false);
+}
+
+Control.button_intialize_pressed = function(){
+    Control.loadScene();
+    Control.start_photon_mapping();
 }
 
 Control.config_loaded = function(){
@@ -28,7 +35,7 @@ Control.load_default_configuration = function(){
     xhr.onreadystatechange = function(){
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                Control.parse_config(xhr.responseText);
+                Control.parse_config(xhr.responseText, false, true);
             } else {
                 $.notify("No se pudo cargar la configuración por defecto", "error");
             }
@@ -40,6 +47,7 @@ Control.load_default_configuration = function(){
 
 Control.start_photon_mapping = function(){
     // adjust canvas aspect ratio to match viewport's
+    var start_time = new Date();
     this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
     console.log('starting photon mapping');
@@ -49,7 +57,11 @@ Control.start_photon_mapping = function(){
     Control.rayTrace(function() {
         Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
         this.ready_for_input = true;
-        $.notify("Finished", "info");
+        var end_time = new Date();
+        var seconds = (end_time.getTime() - start_time.getTime()) / 1000;
+        var message = "Finished in " + seconds;
+        $.notify(message, "info");
+        console.log(message);
     })
 }
 
@@ -102,9 +114,16 @@ Control.clickLnkCargarArchivo = function(){
 
   When everything's ready, Control.config_loaded is called
 */
-Control.parse_config = function(txtConfig){
-	var jsonConfig = JSON.parse(txtConfig);
-	this.config = jsonConfig;
+Control.parse_config = function(raw_config, is_json, start_when_finished){
+    if (is_json){
+        this.config = raw_config;
+    }else{
+        var jsonConfig = JSON.parse(raw_config);
+        this.config = jsonConfig;
+    }
+
+    Control.preloaded_shapes = [];
+    Control.textures = {};
 
     // set default values
     this.config.resolution = this.config.resolution || {};
@@ -168,11 +187,11 @@ Control.parse_config = function(txtConfig){
 
         var model_config = Control.config.scene.models[i];
         K3D.load(this.config.scene.models[i].model, function(obj_txt){
-            Control.parse_obj_model(obj_txt, model_config);
+            Control.parse_obj_model(obj_txt, model_config, start_when_finished);
         });
     }
 
-    if (this.config.scene.models.length == 0){
+    if (this.config.scene.models.length == 0 && start_when_finished){
         this.config_loaded();
     }
 }
@@ -182,7 +201,7 @@ Control.parse_config = function(txtConfig){
 
     Applies any transform present in 'model_config' to the loaded mesh.
 */
-Control.parse_obj_model = function(obj_txt, model_config){
+Control.parse_obj_model = function(obj_txt, model_config, start_when_finished){
     var parsed_obj = K3D.parse.fromOBJ(obj_txt);
     var color = new Color(model_config.color.r, model_config.color.g, model_config.color.b);
 
@@ -314,7 +333,7 @@ Control.parse_obj_model = function(obj_txt, model_config){
         }
     }else{
         Control.loaded_models++;
-        if (Control.loaded_models == Control.config.scene.models.length){
+        if (Control.loaded_models == Control.config.scene.models.length && start_when_finished){
             Control.config_loaded();
         }
     }
@@ -401,7 +420,7 @@ Control.initializeFileUpload = function(){
                 reader.onloadend = function(){
                     var file_content = reader.result;
                     if (extension == JSON_FILE){
-                        Control.parse_config(file_content);
+                        Control.parse_config(file_content, false, false);
                     }
                 }
             }
@@ -584,11 +603,14 @@ Control.generatePhotonImage = function(map_type, clear_canvas){
 
 // Changes canvas width and heght to match viewport's aspect ratio
 Control.adaptCanvasAspectRatio = function(viewport){
+    /*
     if (Control.getCanvasAspectRatio() > viewport.getAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width / Control.getCanvasAspectRatio() * viewport.getAspectRatio(), canvas.height);
     }else if (viewport.getAspectRatio() < Control.getCanvasAspectRatio()){
         Control.setCanvasWidthAndHeight(canvas.width, canvas.height / Control.getCanvasAspectRatio() * viewport.getAspectRatio());
     }
+    */
+    Control.setCanvasWidthAndHeight(Control.config.resolution.x, Control.config.resolution.y);
 }
 
 Control.rayTrace = function(after_trace) {
@@ -644,13 +666,13 @@ Control.rayTrace = function(after_trace) {
             // hey I know it's a mess ok?
             if (++row < canvas.height) {
                 if (row % rows_per_draw == 0) {
-                    //
-                    //createImageBitmap(img)
-                    //    .then(response => {
-                    //        context.drawImage(response,0,0);
-                    //        window.requestAnimationFrame(animatedTrace);
-                    //    })
-                    //break;
+                    
+                    createImageBitmap(img)
+                        .then(response => {
+                            context.drawImage(response,0,0);
+                            window.requestAnimationFrame(animatedTrace);
+                        })
+                    break;
                 } else {
                     continue;
                 }

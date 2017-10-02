@@ -90,6 +90,29 @@
 			},
 
 
+
+			{	"type" : "model",
+				"name" : "bus",
+				"diffuse_color"  : { "r" : 60, "g" : 60, "b": 60},
+				"diffuse_reflection_coefficient" : 1,
+				"specular_color" : { "r" : 100, "g" : 100, "b": 100},
+				"specular_coefficient" : 0,
+				"is_mirror" : false,
+				"transparency" : 0,
+				"refraction_coefficient" : 0
+			},
+
+			{	"type" : "model",
+				"name" : "tea",
+				"diffuse_color"  : { "r" : 60, "g" : 60, "b": 60},
+				"diffuse_reflection_coefficient" : 1,
+				"specular_color" : { "r" : 100, "g" : 100, "b": 100},
+				"specular_coefficient" : 0,
+				"is_mirror" : false,
+				"transparency" : 0,
+				"refraction_coefficient" : 0
+			},
+
 			{ "type" : "square", 
 			  "points" : [
 				{"x" : 5, "y" : 11.99, "z" : 30},
