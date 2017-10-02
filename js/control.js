@@ -5,7 +5,7 @@ var context = canvas.getContext('2d');
 var Control = {};
 
 Control.ready_for_input = false;
-Control.model_shapes = [];
+Control.preloaded_shapes = [];
 Control.textures = {};
 
 Control.initialize = function(){
@@ -42,12 +42,17 @@ Control.start_photon_mapping = function(){
     // adjust canvas aspect ratio to match viewport's
     this.ready_for_input = false;
     Control.adaptCanvasAspectRatio(Control.scene.viewport);
+    console.log('starting photon mapping');
     Control.startPhotonMapping();
-    Control.rayTrace();
-    Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
-    this.ready_for_input = true;
-    $.notify("Finished", "info");
+    console.log('starting trace');
+    // is this what you call callback hell?
+    Control.rayTrace(function() {
+        Control.captureCanvas(ImageTypeEnum.COMPLETE_RENDER);
+        this.ready_for_input = true;
+        $.notify("Finished", "info");
+    })
 }
+
 
 Control.tests = function(){
     console.log(Control.photonMapping.get_photons(PhotonMapEnum.GLOBAL, new Vector(0,1,0)));
@@ -137,6 +142,7 @@ Control.parse_config = function(txtConfig){
 
     // load models
     this.config.scene.models = this.config.scene.models || [];
+    this.config.scene.loaded_models = [];
     this.loaded_models = 0;
     for (var i = 0; i < this.config.scene.models.length; i++){
 
@@ -153,6 +159,7 @@ Control.parse_config = function(txtConfig){
         this.config.scene.models[i].transform.scale.z = this.config.scene.models[i].transform.scale.z || 1;
 
         this.config.scene.models[i].texture = this.config.scene.models[i].texture || "";
+        this.config.scene.models[i].name = this.config.scene.models[i].name || "";
         
         this.config.scene.models[i].color = this.config.scene.models[i].color || {};
         this.config.scene.models[i].color.r = this.config.scene.models[i].color.r || 200; // default color light red
@@ -208,6 +215,10 @@ Control.parse_obj_model = function(obj_txt, model_config){
 
     // rotation + scale
     var transform_matrix = math.multiply(rotation_matrix, scale_matrix);
+
+    // save the generated triangles in the config
+    var model_name = model_config.name;
+    Control.config.scene.loaded_models[model_name] = [];
 
     for (var i = 0; i < parsed_obj.i_verts.length; i+=3){
         var verts = [];
@@ -266,6 +277,8 @@ Control.parse_obj_model = function(obj_txt, model_config){
 
         // calculate normal at the baricenter of the triangle
         if (has_normals){
+            t.set_normals(normals);
+            /*
             var normal = new Vector(0,0,0);
             for (var k = 0; k < normals.length; k++){
                 normal.x += normals[k].x / 3;
@@ -273,11 +286,14 @@ Control.parse_obj_model = function(obj_txt, model_config){
                 normal.z += normals[k].z / 3;
             }
             t.plane.setNormal(normals[1]);            
+            */
         }
 
-        Control.model_shapes.push(t);
+        Control.config.scene.loaded_models[model_name].push(t);
+        //Control.model_shapes.push(t);
     }
 
+    // load textures on the model
     if (model_config.texture != ""){
         var img = document.createElement('img');
         img.src = model_config.texture;
@@ -494,8 +510,8 @@ Control.loadScene = function() {
     */
     let lights = Control.parse_lights_from_config();
     let shapes = Control.parse_shapes_from_config();
-    for (var i = 0; i < Control.model_shapes.length; i++){
-        shapes.push(Control.model_shapes[i]);
+    for (var i = 0; i < Control.preloaded_shapes.length; i++){
+        shapes.push(Control.preloaded_shapes[i]);
     }
     let camera = new Vector(this.config.scene.camera.x, this.config.scene.camera.y, this.config.scene.camera.z);
     let viewport = {
@@ -575,9 +591,9 @@ Control.adaptCanvasAspectRatio = function(viewport){
     }
 }
 
-Control.rayTrace = function() {
+Control.rayTrace = function(after_trace) {
 
-    let img = context.getImageData(0, 0, canvas.width, canvas.height);
+    var img = context.getImageData(0, 0, canvas.width, canvas.height);
 
 	let pixel_size = {
 		width: Control.scene.viewport.width / canvas.width,
@@ -602,26 +618,50 @@ Control.rayTrace = function() {
 	}
 
     let v1 = Control.scene.camera;
-	for (let row = 0; row < canvas.height; ++row) {
-		for (let col = 0; col < canvas.width; ++col) {
-			let current_pos = (row*canvas.width + col) * 4;
-            let v2 = pixels[row*canvas.width + col];
-            let trace_result = Control.scene.trace(v1, v2);
-            if (trace_result.found === true) {
-				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
-                img.data[current_pos] = color.r;
-                img.data[current_pos + 1] = color.g;
-                img.data[current_pos + 2] = color.b;
-                img.data[current_pos + 3] = 255;
+
+    const rows_per_draw = 1;
+    // awful way of keeping track of state
+    let row = 0;
+    function animatedTrace() {
+        for(;;){
+    		for (let col = 0; col < canvas.width; ++col) {
+    			let current_pos = (row*canvas.width + col) * 4;
+                let v2 = pixels[row*canvas.width + col];
+                let trace_result = Control.scene.trace(v1, v2);
+                if (trace_result.found === true) {
+    				let color = trace_result.nearest_shape.calculate_color(trace_result.nearest_collision, v1, v2, 10);
+                    img.data[current_pos] = color.r;
+                    img.data[current_pos + 1] = color.g;
+                    img.data[current_pos + 2] = color.b;
+                    img.data[current_pos + 3] = 255;
+                } else {
+    				img.data[current_pos] = Control.scene.background_color.r;
+    				img.data[current_pos + 1] = Control.scene.background_color.g;
+    				img.data[current_pos + 2] = Control.scene.background_color.b;
+    				img.data[current_pos + 3] = 255;
+    			}
+    		}
+            // hey I know it's a mess ok?
+            if (++row < canvas.height) {
+                if (row % rows_per_draw == 0) {
+                    //
+                    //createImageBitmap(img)
+                    //    .then(response => {
+                    //        context.drawImage(response,0,0);
+                    //        window.requestAnimationFrame(animatedTrace);
+                    //    })
+                    //break;
+                } else {
+                    continue;
+                }
             } else {
-				img.data[current_pos] = Control.scene.background_color.r;
-				img.data[current_pos + 1] = Control.scene.background_color.g;
-				img.data[current_pos + 2] = Control.scene.background_color.b;
-				img.data[current_pos + 3] = 255;
-			}
-		}
-	}
-	context.putImageData(img, 0, 0);
+                context.putImageData(img, 0, 0);
+                // absolutely disgusting hack because I don't know how to do promises
+                return after_trace();
+            }
+        }
+    }
+    animatedTrace();
 }
 
 Control.controlarPrecondiciones = function(){
@@ -799,9 +839,22 @@ Control.parse_lights_from_config = function(){
                     new Color(config_light.color.r, config_light.color.g, config_light.color.b),
                     config_light.power
                 );
+                lights.push(l);
+                break;
+            case "square":
+                var p1 = new Vector(config_light.points[0].x, config_light.points[0].y, config_light.points[0].z);
+                var p2 = new Vector(config_light.points[1].x, config_light.points[1].y, config_light.points[1].z);
+                var p3 = new Vector(config_light.points[2].x, config_light.points[2].y, config_light.points[2].z);
+                l = new SquareLight(
+                    new Color(config_light.color.r, config_light.color.g, config_light.color.b),
+                    config_light.power, [p1, p2, p3]);
+                if (config_light.visible){
+                    Control.preloaded_shapes.push(new Triangle([p1,p3,p2],null,null,0,null,0,false,1,0,l));
+                    Control.preloaded_shapes.push(new Triangle([p2,p3,p1.add(p2.subtract(p1)).add(p3.subtract(p1))],null,null,0,null,0,false,1,0,l));
+                }
+                lights.push(l);
                 break;
         }
-        lights.push(l);
     }
     return lights;
 }
@@ -848,7 +901,20 @@ Control.parse_shapes_from_config = function(){
                     config_shape.is_mirror || false,
                     config_shape.transparency || 0,
                     config_shape.refraction_coefficient || 0
-                )
+                );
+                break;
+            case "model":
+                s = new Model(
+                    this.config.scene.loaded_models[config_shape.name],
+                    null,
+                    new Color(config_shape.diffuse_color.r, config_shape.diffuse_color.g, config_shape.diffuse_color.b),
+                    config_shape.diffuse_reflection_coefficient,
+                    new Color(config_shape.specular_color.r,config_shape.specular_color.g,config_shape.specular_color.b),
+                    config_shape.specular_coefficient || 0,
+                    config_shape.is_mirror || false,
+                    config_shape.transparency || 0,
+                    config_shape.refraction_coefficient || 0
+                );
                 break;
         }
         shapes.push(s);

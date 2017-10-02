@@ -24,7 +24,7 @@ PhotonMapping = function(globalPhotonCount, causticPhotonCount){
 PhotonMapping.MAX_PHOTON_BOUNCE = 4; // overriden by config
 PhotonMapping.PHOTON_PROPORTION = 0.001; // overriden by config
 PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE = "fixed"; // overriden by config. Options: "fixed", "proportional"
-PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 5; // overriden by config
+PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY = 1000; // overriden by config
 
 PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 	let photonMap = this.get_map(map_type);
@@ -36,11 +36,10 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 		emitted_photons = photonsPerLight[l].photonCount;
 		// lifted straight from the book
 		while (emitted_photons--) {
-			let vector_end = Vector.randomDirection();
+			let vector_end = light.get_photon_direction(); 
 			// shoot from light in direction v
 			let photonAbsorbed = false;
-			// TODO: ask light for random point in case it's a non-punctual light
-			let vector_start = light.transform.position;
+			let vector_start = light.get_light_origin_point();
 			Vector.add(vector_start, vector_end, vector_end);
 			let bounces = 0;
 			let current_color = light.color;
@@ -54,7 +53,7 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 				// let x = 0;
 				while (true) {
 					trace_result = scene.trace(vector_start, vector_end);
-					if (trace_result.found && (trace_result.nearest_shape.specular_coefficient > 0 || trace_result.nearest_shape.transparency > 0)) {
+					if (trace_result.found && ((trace_result.nearest_shape.is_mirror && trace_result.nearest_shape.specular_coefficient > 0) || trace_result.nearest_shape.transparency > 0)) {
 						break;
 					}
 					vector_end = Vector.randomDirectionCartesian(vector_end);
@@ -90,35 +89,39 @@ PhotonMapping.prototype.generatePhotons = function(map_type, scene){
 						// set vector_start, vector_end, current_color for the next step
 						vector_start = collision;
 						vector_end = shape.diffuse_reflection_direction(collision, refraction_coefficient, vector_end);
-						current_color = shape.calculate_diffuse_photon_color(current_color);
+						current_color = shape.calculate_diffuse_photon_color(current_color, collision);
 
 					} else if (roulette < shape.specular_coefficient + shape.diffuse_reflection_coefficient) {
 						//specular reflection
-						{
+						if (map_type === PhotonMapEnum.CAUSTIC) {
 							let reflection_direction = shape.specular_reflection_direction(collision, vector_start, refraction_coefficient, vector_end);
 							Vector.add(collision, reflection_direction, vector_end);
 							vector_start = collision;
 							// TODO: allow for colored mirrors
 							current_color = current_color;
+						} else if (map_type === PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
 						}
 					} else if (roulette < shape.transparency + shape.specular_coefficient + shape.diffuse_reflection_coefficient){
 						//transmission
-						{
+						if (map_type === PhotonMapEnum.CAUSTIC) {
 							let refraction_result =  shape.refraction_direction(collision, vector_start, refraction_coefficient, vector_end);
 							refraction_coefficient = refraction_result.opposite_refraction_coefficient;
 							// same as in calculate_refraction_color
 							// I know it's a mess, sorry
 
 							// don't collide with the exit surface
-							let collision_no_error = collision.multiply(0.0001);
+							let exit_vector = refraction_result.exit_vector;
+							let collision_no_error = exit_vector.multiply(0.0001);
 							Vector.add(collision, collision_no_error, collision_no_error);
-							vector_end = refraction_result.exit_vector;
-							Vector.add(vector_end, collision_no_error, vector_end)
+							Vector.add(exit_vector, collision_no_error, vector_end);
 							vector_start = collision_no_error;
 							// shape to ignore is null so it can collide with itself
 							shape = null;
 							// TODO: allow for colored glass
 							current_color = current_color;
+						} else if (map_type === PhotonMapEnum.GLOBAL) {
+							photonAbsorbed = true;
 						}
 					} else {
 						// absorption
@@ -167,8 +170,6 @@ PhotonMapping.prototype.calculatePhotonsPerLight = function(lights, scenePower, 
 PhotonMapping.prototype.drawPhotonMap = function(type, scene, clear_canvas){
 	let photon_map = this.get_map(type).photons;
 
-	let ccount = 0;
-
 	let xPixelDensity = scene.viewport.width / canvas.width;
 	let yPixelDensity = scene.viewport.height / canvas.height;
 
@@ -182,19 +183,19 @@ PhotonMapping.prototype.drawPhotonMap = function(type, scene, clear_canvas){
 	for (let i = 0; i < photon_map.length; i++){
 
 		let vectorStart = photon_map[i].position;
-		let vectorEnd = scene.camera;
+		if (scene.inFrontOfCamera(vectorStart)) {
+			let vectorEnd = scene.camera;
 
-		let collision = scene.viewport.collidesWithRay([vectorStart, vectorEnd]);
+			let collision = scene.viewport.collidesWithRay([vectorStart, vectorEnd]);
 
-		if (collision.length > 0){// && scene.inFrontOfCamera(collision[0])){
-			ccount++;
-
-			let x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
-			let y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
-			let pixelIndex = 4 * ( canvas.width * (canvas.height - y) + x);
-			imageData.data[pixelIndex] = photon_map[i].color.r;
-			imageData.data[pixelIndex + 1] = photon_map[i].color.g;
-			imageData.data[pixelIndex + 2] = photon_map[i].color.b;
+			if (collision.length > 0){
+				let x = Math.round((collision[0].x - (scene.viewport.center.x - scene.viewport.width / 2) ) / xPixelDensity);
+				let y = Math.round((collision[0].y - (scene.viewport.center.y - scene.viewport.height / 2) ) / yPixelDensity);
+				let pixelIndex = 4 * ( canvas.width * (canvas.height - y) + x);
+				imageData.data[pixelIndex] = photon_map[i].color.r;
+				imageData.data[pixelIndex + 1] = photon_map[i].color.g;
+				imageData.data[pixelIndex + 2] = photon_map[i].color.b;
+			}
 		}
 	}
 
@@ -218,16 +219,16 @@ PhotonMapping.prototype.get_map = function(map_type){
 /*
 	Returns photons near desired position. Option: limit to photons in a given shape
 */
-PhotonMapping.prototype.get_photons = function(map_type, position, shape=null){
+PhotonMapping.prototype.get_photons = function(map_type, position, shape=null, max_distance=Infinity){
 	let photon_map = this.get_map(map_type);
-	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type));
+	let nearest_indexes = photon_map.kdtree.knn(position.toArray(), this.photon_count_per_point(map_type), max_distance);
 	return nearest_indexes.filter(i => (shape == null) || (photon_map.photons[i].shape == shape)).map(i => photon_map.photons[i]);
 }
 
 PhotonMapping.prototype.photon_count_per_point = function(map_type){
 	let photon_map = this.get_map(map_type);
 	let photon_count = 0;
-	if (PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE == "fixed"){
+	if (PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE === "fixed" || map_type === PhotonMapEnum.CAUSTIC){
 		// photons as fixed quantity
 		photon_count = PhotonMapping.NEARBY_PHOTON_FIXED_QUANTITY;
 	}else if (PhotonMapping.NEARBY_PHOTON_PER_POINT_TYPE == "proportional"){
